@@ -1,327 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Life OS</title>
-<link rel="icon" href="data:,">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<style>
-/* ---------- reset / tokens ---------- */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --ink:#000;
-  --paper:#fff;
-  --g1:#f5f5f5;
-  --g2:#ececec;
-  --g3:#d4d4d4;
-  --g4:#a3a3a3;
-  --g5:#525252;
-  --line:#e7e7e7;
-  --radius:8px;
-}
-html{-webkit-text-size-adjust:100%}
-body{
-  font-family:'Inter',system-ui,-apple-system,sans-serif;
-  background:var(--paper);color:var(--ink);
-  font-size:15px;line-height:1.5;
-  padding-bottom:76px; /* room for mobile bottom nav */
-}
-button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
-input,select,textarea{font:inherit;color:var(--ink)}
-::placeholder{color:var(--g4)}
-
-.wrap{max-width:720px;margin:0 auto;padding:0 20px}
-
-/* ---------- header / nav ---------- */
-header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.head-row{display:flex;align-items:center;justify-content:space-between;height:56px}
-.wordmark{font-weight:700;font-size:13px;letter-spacing:.22em}
-nav{display:flex;gap:2px}
-nav button{
-  padding:6px 12px;font-size:13px;font-weight:500;color:var(--g4);
-  border-radius:6px;transition:color .15s;
-}
-nav button:hover{color:var(--ink)}
-nav button.active{color:var(--paper);background:var(--ink)}
-@media (max-width:639px){
-  nav{
-    position:fixed;bottom:0;left:0;right:0;z-index:20;
-    background:var(--paper);border-top:1px solid var(--line);
-    justify-content:space-around;padding:8px 8px calc(8px + env(safe-area-inset-bottom));
-  }
-  nav button{flex:1;text-align:center;padding:8px 4px}
-}
-
-/* ---------- layout ---------- */
-main{padding:28px 20px 40px}
-section{margin-bottom:36px}
-.micro{
-  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--g4);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;
-}
-.micro .linkish{letter-spacing:0;text-transform:none;font-weight:500;font-size:12px}
-.linkish{color:var(--g4);text-decoration:underline;text-underline-offset:3px}
-.linkish:hover{color:var(--ink)}
-h1.day{font-size:22px;font-weight:700;margin-bottom:2px}
-.sub{color:var(--g4);font-size:13px}
-.empty{color:var(--g4);font-size:13px;padding:14px 0}
-.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px}
-.row-list>*+*{border-top:1px solid var(--line)}
-
-/* ---------- buttons ---------- */
-.btn{
-  background:var(--ink);color:var(--paper);border-radius:6px;
-  padding:8px 14px;font-size:13px;font-weight:600;
-  transition:opacity .15s;
-}
-.btn:hover{opacity:.8}
-.btn-ghost{
-  background:none;color:var(--ink);border:1px solid var(--g3);border-radius:6px;
-  padding:7px 13px;font-size:13px;font-weight:500;
-}
-.btn-ghost:hover{border-color:var(--ink)}
-.x{color:var(--g3);font-size:15px;line-height:1;padding:4px 6px;border-radius:4px}
-.x:hover{color:var(--ink)}
-.chip{
-  display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.04em;
-  border:1px solid var(--g3);border-radius:999px;padding:1px 8px;color:var(--g5);
-  white-space:nowrap;
-}
-.chip.solid{background:var(--ink);border-color:var(--ink);color:var(--paper)}
-.chip.faint{border-color:var(--g2);color:var(--g4)}
-
-/* ---------- checkbox (adapted from uiverse.io stroke-draw checkmark pattern, monochrome) ---------- */
-.cb{display:inline-flex;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.cb input{position:absolute;opacity:0;pointer-events:none}
-.cb .box{
-  width:22px;height:22px;border:1.5px solid var(--ink);border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  transition:background .15s;
-}
-.cb.round .box{border-radius:50%;width:40px;height:40px}
-.cb svg{width:12px;height:12px;overflow:visible}
-.cb.round svg{width:16px;height:16px}
-.cb svg path{
-  fill:none;stroke:var(--paper);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
-  stroke-dasharray:24;stroke-dashoffset:24;
-  transition:stroke-dashoffset .22s ease .05s;
-}
-.cb input:checked + .box{background:var(--ink);animation:pop .28s ease}
-.cb input:checked + .box path{stroke-dashoffset:0}
-@keyframes pop{0%{transform:scale(1)}45%{transform:scale(.86)}100%{transform:scale(1)}}
-
-/* ---------- habits ---------- */
-.habit{display:flex;align-items:center;gap:14px;padding:12px 0}
-.habit .hmeta{flex:1;min-width:0}
-.habit .hname{font-weight:600;font-size:14.5px}
-.habit .hstreak{font-size:12px;color:var(--g4)}
-.habit.done .hname{color:var(--g5)}
-/* 8-week grid (adapted from the CSS-grid GitHub contribution graph pattern) */
-.heat{display:grid;grid-template-rows:repeat(7,7px);grid-auto-flow:column;grid-auto-columns:7px;gap:2px;flex-shrink:0}
-.heat i{width:7px;height:7px;border-radius:2px;background:var(--g2)}
-.heat i.on{background:var(--ink)}
-.heat i.future{visibility:hidden}
-.heat i.today-cell{outline:1px solid var(--g4);outline-offset:1px}
-
-/* ---------- progress ring (adapted from shadcn-ecosystem SVG circular progress) ---------- */
-.ring{width:44px;height:44px;flex-shrink:0}
-.ring .track{stroke:var(--g2)}
-.ring .fill{stroke:var(--ink);transition:stroke-dashoffset .4s ease}
-.ring text{font-size:9.5px;font-weight:600;fill:var(--ink)}
-
-/* ---------- progress bar (adapted from shadcn/ui Progress track/indicator) ---------- */
-.bar{height:3px;background:var(--g2);border-radius:999px;overflow:hidden;flex:1}
-.bar i{display:block;height:100%;background:var(--ink);border-radius:999px;transition:width .3s ease}
-
-/* ---------- goals ---------- */
-.goal-card{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
-.goal-head{display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.goal-head:hover{background:var(--g1)}
-.goal-title{font-weight:600;font-size:15px}
-.goal-why{font-size:12.5px;color:var(--g4)}
-.goal-body{border-top:1px solid var(--line);padding:16px;display:none}
-.goal-card.open .goal-body{display:block}
-.ms{margin-bottom:16px}
-.ms-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.ms-title{font-weight:600;font-size:13.5px;flex-shrink:0}
-.ms-pct{font-size:11px;color:var(--g4);flex-shrink:0}
-.task{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:14px}
-.task.done span{color:var(--g4);text-decoration:line-through}
-.inline-add{display:flex;gap:8px;margin-top:6px}
-.inline-add input{
-  flex:1;border:none;border-bottom:1px solid var(--g2);padding:4px 0;font-size:13px;outline:none;background:none;
-}
-.inline-add input:focus{border-color:var(--ink)}
-.inline-add button{font-size:12px;font-weight:600;color:var(--g4)}
-.inline-add button:hover{color:var(--ink)}
-.goal-foot{display:flex;gap:14px;margin-top:8px;font-size:12px}
-.goal-foot button{color:var(--g4);text-decoration:underline;text-underline-offset:3px}
-.goal-foot button:hover{color:var(--ink)}
-
-/* next actions on home */
-.na{display:flex;align-items:center;gap:10px;padding:10px 0}
-.na .nag{font-size:11.5px;color:var(--g4)}
-
-/* ---------- school ---------- */
-.dl{display:flex;align-items:center;gap:12px;padding:11px 0}
-.dl .dmeta{flex:1;min-width:0}
-.dl .dtitle{font-size:14px;font-weight:500}
-.dl.done .dtitle{color:var(--g4);text-decoration:line-through}
-.dl .dtags{display:flex;gap:6px;margin-top:2px;flex-wrap:wrap}
-.due{font-size:12px;font-weight:600;white-space:nowrap}
-.due.over{background:var(--ink);color:var(--paper);padding:2px 8px;border-radius:4px}
-.due.soon{color:var(--ink)}
-.due.later{color:var(--g4);font-weight:500}
-
-/* ---------- sleep ---------- */
-.seg{display:flex;gap:6px;flex-wrap:wrap}
-.seg button{
-  min-width:38px;height:34px;border:1px solid var(--g3);border-radius:6px;
-  font-size:13px;font-weight:600;transition:all .12s;padding:0 8px;
-}
-.seg button:hover{border-color:var(--ink)}
-.seg button.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.sleep-row{display:flex;align-items:baseline;gap:10px;margin-bottom:8px}
-.sleep-row .lab{font-size:12px;color:var(--g4);width:52px;flex-shrink:0}
-.chart-wrap{overflow-x:auto}
-.chart-wrap svg{display:block;width:100%;height:auto;min-width:420px}
-.legend{font-size:11.5px;color:var(--g4);margin-top:8px}
-
-/* ---------- workouts ---------- */
-.wo-form{display:grid;grid-template-columns:1fr 90px;gap:10px}
-.wo-form input{border:1px solid var(--g3);border-radius:6px;padding:8px 10px;font-size:14px;outline:none;width:100%}
-.wo-form input:focus{border-color:var(--ink)}
-.wo-form .full{grid-column:1/-1}
-.wo{display:flex;align-items:baseline;gap:10px;padding:10px 0;font-size:14px}
-.wo .wdate{font-size:12px;color:var(--g4);width:56px;flex-shrink:0}
-.wo .wnote{color:var(--g4);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-
-/* ---------- review ---------- */
-.rv-item{padding:8px 0;font-size:14px;display:flex;gap:10px;align-items:baseline}
-.rv-item .when{font-size:11.5px;color:var(--g4);flex-shrink:0}
-textarea{
-  width:100%;border:1px solid var(--g3);border-radius:6px;padding:10px 12px;
-  min-height:96px;resize:vertical;outline:none;font-size:14px;
-}
-textarea:focus{border-color:var(--ink)}
-.stat-line{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:4px}
-.stat b{font-size:22px;font-weight:700;display:block;line-height:1.2}
-.stat span{font-size:11.5px;color:var(--g4)}
-
-/* ---------- dialogs / forms ---------- */
-dialog{
-  border:1px solid var(--ink);border-radius:10px;padding:24px;
-  width:min(92vw,420px);margin:auto;
-}
-dialog::backdrop{background:rgba(0,0,0,.45)}
-dialog h2{font-size:15px;font-weight:700;margin-bottom:16px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--g4);margin-bottom:5px}
-.field input,.field select{
-  width:100%;border:1px solid var(--g3);border-radius:6px;padding:9px 11px;font-size:14px;outline:none;background:var(--paper);
-}
-.field input:focus,.field select:focus{border-color:var(--ink)}
-.field.check{display:flex;align-items:center;gap:10px}
-.field.check label{margin:0;text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--ink)}
-.dlg-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
-
-/* ---------- tooltip ---------- */
-#tooltip{
-  position:fixed;z-index:50;background:var(--ink);color:var(--paper);
-  font-size:11.5px;font-weight:500;padding:4px 9px;border-radius:5px;
-  pointer-events:none;opacity:0;transition:opacity .1s;white-space:nowrap;
-}
-
-/* task-complete feedback */
-.fade-done{animation:fadeDone .3s ease}
-@keyframes fadeDone{0%{opacity:1}50%{opacity:.35}100%{opacity:1}}
-
-@media (min-width:640px){body{padding-bottom:0}}
-</style>
-</head>
-<body>
-
-<header>
-  <div class="wrap head-row">
-    <span class="wordmark">LIFE OS</span>
-    <nav id="nav">
-      <button data-nav="today" class="active">Today</button>
-      <button data-nav="goals">Goals</button>
-      <button data-nav="school">School</button>
-      <button data-nav="workouts">Workouts</button>
-      <button data-nav="review">Review</button>
-    </nav>
-  </div>
-</header>
-
-<main class="wrap" id="main"></main>
-
-<!-- ---------- dialogs ---------- -->
-<dialog id="dlg-goal">
-  <form id="form-goal">
-    <h2 id="dlg-goal-title">New goal</h2>
-    <input type="hidden" name="id">
-    <div class="field"><label>Title</label><input name="title" required maxlength="80" placeholder="e.g. Get 7 in MYP Mathematics"></div>
-    <div class="field"><label>Why (one line)</label><input name="why" maxlength="120" placeholder="Why does this matter to you?"></div>
-    <div class="field"><label>Deadline</label><input name="deadline" type="date" required></div>
-    <div class="field" id="goal-status-field" hidden><label>Status</label>
-      <select name="status"><option value="active">Active</option><option value="paused">Paused</option><option value="done">Done</option></select>
-    </div>
-    <div class="dlg-actions"><button type="button" class="btn-ghost" data-close>Cancel</button><button class="btn">Save</button></div>
-  </form>
-</dialog>
-
-<dialog id="dlg-habit">
-  <form id="form-habit">
-    <h2 id="dlg-habit-title">New habit</h2>
-    <input type="hidden" name="id">
-    <div class="field"><label>Name</label><input name="name" required maxlength="60" placeholder="e.g. Read 20 min"></div>
-    <div class="field check"><input type="checkbox" name="workoutLinked" id="hb-wl" style="width:auto"><label for="hb-wl">Auto-check when I log a workout</label></div>
-    <div class="field check" id="habit-arch-field" hidden><input type="checkbox" name="archived" id="hb-ar" style="width:auto"><label for="hb-ar">Archived (hidden from Today)</label></div>
-    <div class="dlg-actions">
-      <button type="button" class="x" id="habit-delete" hidden style="margin-right:auto;font-size:12px;color:var(--g4);text-decoration:underline">Delete habit</button>
-      <button type="button" class="btn-ghost" data-close>Cancel</button><button class="btn">Save</button>
-    </div>
-  </form>
-</dialog>
-
-<dialog id="dlg-deadline">
-  <form id="form-deadline">
-    <h2 id="dlg-deadline-title">New school task</h2>
-    <input type="hidden" name="id">
-    <div class="field"><label>Task</label><input name="title" required maxlength="100" placeholder="e.g. Criterion B design report"></div>
-    <div class="field"><label>Subject</label>
-      <input name="subject" required maxlength="40" list="subjects" placeholder="e.g. Math">
-      <datalist id="subjects">
-        <option>Math</option><option>English</option><option>Kazakh</option><option>Russian</option>
-        <option>Physics</option><option>Chemistry</option><option>Biology</option>
-        <option>Individuals &amp; Societies</option><option>Design</option><option>PHE</option><option>Arts</option>
-      </datalist>
-    </div>
-    <div class="field"><label>Due date</label><input name="due" type="date" required></div>
-    <div class="field"><label>Priority</label>
-      <select name="priority"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select>
-    </div>
-    <div class="field"><label>Linked goal (optional)</label><select name="goalId"><option value="">—</option></select></div>
-    <div class="dlg-actions"><button type="button" class="btn-ghost" data-close>Cancel</button><button class="btn">Save</button></div>
-  </form>
-</dialog>
-
-<div id="tooltip"></div>
-
-<script>
 'use strict';
-/* ================= state ================= */
+
+/* ================= theme (BoW / WoB) ================= */
+const THEME_KEY = 'lifeos.theme';
+function setTheme(t){
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem(THEME_KEY, t);
+  document.getElementById('theme-toggle').setAttribute('aria-pressed', String(t === 'dark'));
+  document.getElementById('meta-theme').content = t === 'dark' ? '#000000' : '#ffffff';
+}
+setTheme(localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+document.getElementById('theme-toggle').addEventListener('click', () =>
+  setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+/* ================= state + server sync ================= */
 const KEY = 'lifeos.v1';
-const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{} };
-let S;
-try { S = Object.assign({}, DEFAULT_STATE, JSON.parse(localStorage.getItem(KEY)) || {}); }
-catch(e){ S = JSON.parse(JSON.stringify(DEFAULT_STATE)); }
-const save = () => localStorage.setItem(KEY, JSON.stringify(S));
+const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, updatedAt:0 };
+let S = Object.assign({}, DEFAULT_STATE);
+try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){ /* corrupt local cache — start clean */ }
+
+const HAS_API = location.protocol.startsWith('http');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function setOffline(off){ document.getElementById('sync').hidden = !off; }
+
+let pushTimer = null;
+function pushSoon(){ if(!HAS_API) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 500); }
+async function pushNow(){
+  if(!HAS_API) return;
+  try {
+    const r = await fetch('/api/state', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(S) });
+    if(r.status === 409){
+      const j = await r.json();
+      if(j.state){ S = Object.assign({}, DEFAULT_STATE, j.state); localStorage.setItem(KEY, JSON.stringify(S)); render(); }
+    }
+    setOffline(!r.ok && r.status !== 409);
+  } catch(e){ setOffline(true); }
+}
+async function pullRemote(){
+  if(!HAS_API) return;
+  try {
+    const r = await fetch('/api/state', { cache:'no-store' });
+    if(!r.ok) throw new Error('bad status');
+    const remote = await r.json();
+    if((remote.updatedAt || 0) > (S.updatedAt || 0)){
+      S = Object.assign({}, DEFAULT_STATE, remote);
+      localStorage.setItem(KEY, JSON.stringify(S));
+      render();
+    } else if((S.updatedAt || 0) > (remote.updatedAt || 0)){
+      pushNow();
+    }
+    setOffline(false);
+  } catch(e){ setOffline(true); }
+}
+function save(){
+  S.updatedAt = Date.now();
+  localStorage.setItem(KEY, JSON.stringify(S));
+  pushSoon();
+}
 
 let view = 'today';
 let habitEditMode = false;
@@ -386,50 +121,64 @@ function checkbox(checked, attrs, round){
   return '<label class="cb'+(round?' round':'')+'"><input type="checkbox" '+attrs+(checked?' checked':'')+'>'
     +'<span class="box"><svg viewBox="0 0 16 16"><path d="M2.5 8.5 6 12 13.5 4"/></svg></span></label>';
 }
-/* 8-week history grid — CSS-grid contribution-graph pattern, columns = weeks (Mon→Sun rows) */
-function heatGrid(h){
+
+/* 8-week habit calendar: month labels + Mon/Wed/Fri rail + contribution grid */
+function calGrid(h){
   const start = addDays(monday(new Date()), -49); // 8 columns of 7 days ending this week
   const t = todayKey();
+  let months = '', prevMonth = -1, lastLabelCol = -9;
+  for(let c=0;c<8;c++){
+    const d = addDays(start, c*7);
+    if(d.getMonth() !== prevMonth){
+      if(c - lastLabelCol >= 2 && c <= 6){
+        months += '<span style="grid-column:'+(c+1)+'">'+MONTHS[d.getMonth()]+'</span>';
+        lastLabelCol = c;
+      }
+      prevMonth = d.getMonth();
+    }
+  }
   let cells = '';
   for(let i=0;i<56;i++){
     const d = addDays(start, i);
     const k = dkey(d);
     const future = k > t;
     const on = !!(h.log && h.log[k]);
-    cells += '<i class="'+(on?'on ':'')+(future?'future ':'')+(k===t?'today-cell':'')+'" data-tip="'
-      + shortDate(k) + ' — ' + (future ? '' : (on ? 'done' : 'missed')) + '"></i>';
+    cells += '<i class="'+(on?'on ':'')+(future?'future ':'')+(k===t?'tc':'')+'" data-tip="'
+      + shortDate(k) + (future ? '' : ' — ' + (on ? 'done' : 'missed')) + '"></i>';
   }
-  return '<div class="heat" aria-label="last 8 weeks">'+cells+'</div>';
+  return '<div class="cal" aria-label="last 8 weeks">'
+    + '<div class="cal-months">'+months+'</div>'
+    + '<div class="cal-row"><div class="cal-days"><i>M</i><i></i><i>W</i><i></i><i>F</i><i></i><i></i></div>'
+    + '<div class="heat">'+cells+'</div></div></div>';
 }
 
-/* ================= sleep chart (single-axis: bars for hours, shade strip for feeling) ================= */
-const FEEL_SHADE = ['#ededed','#d4d4d4','#a3a3a3','#525252','#000000']; // 1..5, light→dark grayscale ramp
+/* ================= sleep chart (single axis: bars for hours, shade strip for feeling) ================= */
 function sleepChart(){
   const days = []; for(let i=13;i>=0;i--) days.push(dkey(addDays(new Date(),-i)));
   const W=560, slot=W/14, barW=16, base=100, top=8, maxH=12, ph=(base-top)/maxH;
   let svg = '<svg viewBox="0 0 560 150" aria-label="Sleep, last 14 days">';
   const refY = base - 8*ph;
-  svg += '<line x1="0" y1="'+refY+'" x2="'+W+'" y2="'+refY+'" stroke="#d4d4d4" stroke-width="1" stroke-dasharray="3 4"/>';
-  svg += '<text x="'+W+'" y="'+(refY-4)+'" text-anchor="end" font-size="9" fill="#a3a3a3">8h</text>';
+  svg += '<line class="c-ref" x1="0" y1="'+refY+'" x2="'+W+'" y2="'+refY+'" stroke-width="1" stroke-dasharray="3 4"/>';
+  svg += '<text class="c-lab" x="'+W+'" y="'+(refY-4)+'" text-anchor="end" font-size="9">8h</text>';
   days.forEach((k,i)=>{
     const e = S.sleep[k];
     const x = i*slot + (slot-barW)/2;
     if(e && e.hours != null){
       const hh = Math.min(e.hours, maxH), bh = Math.max(hh*ph, 3), y = base-bh, r = Math.min(3, bh/2);
       /* rounded top, flat baseline */
-      svg += '<path d="M'+x+' '+base+' L'+x+' '+(y+r)+' Q'+x+' '+y+' '+(x+r)+' '+y
+      svg += '<path class="c-bar" d="M'+x+' '+base+' L'+x+' '+(y+r)+' Q'+x+' '+y+' '+(x+r)+' '+y
            + ' L'+(x+barW-r)+' '+y+' Q'+(x+barW)+' '+y+' '+(x+barW)+' '+(y+r)
-           + ' L'+(x+barW)+' '+base+' Z" fill="#000" data-tip="'+shortDate(k)+' — '+e.hours+'h'
+           + ' L'+(x+barW)+' '+base+' Z" data-tip="'+shortDate(k)+' — '+e.hours+'h'
            + (e.feeling?(' · feeling '+e.feeling+'/5'):'')+'"/>';
     } else {
-      svg += '<rect x="'+x+'" y="'+(base-2)+'" width="'+barW+'" height="2" rx="1" fill="#ececec" data-tip="'+shortDate(k)+' — not logged"/>';
+      svg += '<rect class="c-none" x="'+x+'" y="'+(base-2)+'" width="'+barW+'" height="2" rx="1" data-tip="'+shortDate(k)+' — not logged"/>';
     }
     if(e && e.feeling){
-      svg += '<rect x="'+(x+1)+'" y="110" width="14" height="14" rx="3" fill="'+FEEL_SHADE[e.feeling-1]+'" data-tip="'+shortDate(k)+' — feeling '+e.feeling+'/5"/>';
+      svg += '<rect class="fq'+e.feeling+'" x="'+(x+1)+'" y="110" width="14" height="14" rx="3" data-tip="'+shortDate(k)+' — feeling '+e.feeling+'/5"/>';
     } else {
-      svg += '<rect x="'+(x+1)+'" y="110" width="14" height="14" rx="3" fill="none" stroke="#ececec"/>';
+      svg += '<rect class="fq0" x="'+(x+1)+'" y="110" width="14" height="14" rx="3"/>';
     }
-    if(i%2===1) svg += '<text x="'+(i*slot+slot/2)+'" y="142" text-anchor="middle" font-size="9" fill="#a3a3a3">'+parseKey(k).getDate()+'</text>';
+    if(i%2===1) svg += '<text class="c-lab" x="'+(i*slot+slot/2)+'" y="142" text-anchor="middle" font-size="9">'+parseKey(k).getDate()+'</text>';
   });
   svg += '</svg>';
   const logged = days.map(k=>S.sleep[k]).filter(Boolean);
@@ -439,7 +188,7 @@ function sleepChart(){
   const avgF = feelArr.length ? (feelArr.reduce((a,b)=>a+b,0)/feelArr.length).toFixed(1) : '—';
   return '<div class="sub" style="margin-bottom:10px">14-day average: <b style="color:var(--ink)">'+avgH+'h</b> sleep · <b style="color:var(--ink)">'+avgF+'</b>/5 feeling</div>'
     + '<div class="chart-wrap">'+svg+'</div>'
-    + '<div class="legend">Bars — hours slept · squares — feeling (darker = better)</div>';
+    + '<div class="legend">Bars — hours slept · squares — feeling (stronger = better)</div>';
 }
 
 /* ================= render: today ================= */
@@ -451,8 +200,8 @@ function renderToday(){
 
   /* habits */
   const habits = activeHabits();
-  html += '<section><div class="micro"><span>Habits</span><span>'
-    + (habitEditMode && habits.length<5 ? '<button class="linkish" data-action="habit-add" style="margin-right:12px">+ add</button>' : '')
+  html += '<section><div class="micro"><span>Habits</span><span style="display:flex;gap:12px">'
+    + (habitEditMode && habits.length<5 ? '<button class="linkish" data-action="habit-add">+ add</button>' : '')
     + '<button class="linkish" data-action="habit-editmode">'+(habitEditMode?'done':'edit')+'</button></span></div>';
   if(!habits.length){
     html += '<div class="empty">No habits yet. <button class="linkish" data-action="habit-add">Add your first habit</button> (max 5 active).</div>';
@@ -465,7 +214,7 @@ function renderToday(){
         + checkbox(done, 'data-habit="'+h.id+'" aria-label="'+esc(h.name)+'"', true)
         + '<div class="hmeta"><div class="hname">'+esc(h.name)+'</div>'
         + '<div class="hstreak">streak '+streak+(h.workoutLinked?' · linked to workouts':'')+'</div></div>'
-        + (habitEditMode ? '<button class="linkish" data-action="habit-edit" data-id="'+h.id+'" style="font-size:12px">edit</button>' : heatGrid(h))
+        + (habitEditMode ? '<button class="linkish" data-action="habit-edit" data-id="'+h.id+'">edit</button>' : calGrid(h))
         + '</div>';
     }
     html += '</div>';
@@ -486,7 +235,7 @@ function renderToday(){
   html += '<div class="sleep-row"><span class="lab">Hours</span><div class="seg">';
   for(let hv=4; hv<=10; hv++) html += '<button data-action="sleep-hours" data-v="'+hv+'" class="'+(se.hours===hv?'sel':'')+'">'+(hv===4?'≤4':hv===10?'10+':hv)+'</button>';
   html += '</div></div>';
-  html += '<div class="sleep-row" style="margin-bottom:0"><span class="lab">Feeling</span><div class="seg">';
+  html += '<div class="sleep-row"><span class="lab">Feeling</span><div class="seg">';
   for(let f=1; f<=5; f++) html += '<button data-action="sleep-feel" data-v="'+f+'" class="'+(se.feeling===f?'sel':'')+'" aria-label="feeling '+f+' of 5">'+f+'</button>';
   html += '</div></div>';
   html += '</div></section>';
@@ -551,9 +300,9 @@ function goalCard(g){
   }
   html += '<form class="inline-add" data-form="ms-add" data-goal="'+g.id+'" style="margin-top:12px">'
     + '<input name="title" placeholder="Add a milestone" maxlength="80" autocomplete="off" required><button>+ milestone</button></form>';
-  html += '<div class="goal-foot"><button data-action="goal-edit" data-id="'+g.id+'">edit</button>'
-    + (g.status!=='done'?'<button data-action="goal-done" data-id="'+g.id+'">mark done</button>':'<button data-action="goal-reopen" data-id="'+g.id+'">reopen</button>')
-    + '<button data-action="goal-del" data-id="'+g.id+'">delete</button></div>';
+  html += '<div class="goal-foot"><button class="linkish" data-action="goal-edit" data-id="'+g.id+'">edit</button>'
+    + (g.status!=='done'?'<button class="linkish" data-action="goal-done" data-id="'+g.id+'">mark done</button>':'<button class="linkish" data-action="goal-reopen" data-id="'+g.id+'">reopen</button>')
+    + '<button class="linkish" data-action="goal-del" data-id="'+g.id+'">delete</button></div>';
   html += '</div></div>';
   return html;
 }
@@ -606,8 +355,8 @@ function renderSchool(){
 
 /* ================= render: workouts ================= */
 function renderWorkouts(){
-  const wk = S.workouts.filter(w => dayDiff(w.date) > -7).length;
-  const wkMin = S.workouts.filter(w => dayDiff(w.date) > -7).reduce((a,w)=>a+(w.duration||0),0);
+  const week = S.workouts.filter(w => dayDiff(w.date) > -7);
+  const wkMin = week.reduce((a,w)=>a+(w.duration||0),0);
   let html = '<section><div class="micro"><span>Quick log</span></div><div class="card">'
     + '<form class="wo-form" data-form="wo-add">'
     + '<input name="type" list="wotypes" placeholder="Type — e.g. Gym" required maxlength="40" autocomplete="off">'
@@ -616,7 +365,7 @@ function renderWorkouts(){
     + '<input class="full" name="note" placeholder="Note (optional) — e.g. bench 60×5, felt strong" maxlength="120" autocomplete="off">'
     + '<button class="btn full">Log workout</button>'
     + '</form></div>'
-    + '<div class="legend" style="margin-top:10px">Last 7 days: <b style="color:var(--ink)">'+wk+'</b> workout'+(wk===1?'':'s')+' · '+wkMin+' min'
+    + '<div class="legend" style="margin-top:10px">Last 7 days: <b style="color:var(--ink)">'+week.length+'</b> workout'+(week.length===1?'':'s')+' · '+wkMin+' min'
     + (activeHabits().some(h=>h.workoutLinked)?' · logging also checks your linked habit':'')+'</div></section>';
 
   const rec = S.workouts.slice().sort((a,b)=>b.date<a.date?-1:b.date>a.date?1:0).slice(0,30);
@@ -768,7 +517,7 @@ document.getElementById('form-habit').addEventListener('submit', e=>{
   }
   save(); dlgHabit.close(); render();
 });
-document.getElementById('habit-delete').addEventListener('click', e=>{
+document.getElementById('habit-delete').addEventListener('click', ()=>{
   const id = document.getElementById('form-habit').id.value;
   if(id && confirm('Delete this habit and its history?')){
     S.habits = S.habits.filter(h=>h.id!==id);
@@ -807,25 +556,25 @@ document.getElementById('main').addEventListener('click', e=>{
   else if(a==='goal-edit'){ openGoalDlg(S.goals.find(g=>g.id===el.dataset.id)); }
   else if(a==='goal-toggle-open'){
     const id = el.dataset.id;
-    openGoals.has(id) ? openGoals.delete(id) : openGoals.add(id);
+    if(openGoals.has(id)) openGoals.delete(id); else openGoals.add(id);
     el.closest('.goal-card').classList.toggle('open');
   }
-  else if(a==='goal-done'){ const g=S.goals.find(g=>g.id===el.dataset.id); if(g){g.status='done'; save(); render();} }
-  else if(a==='goal-reopen'){ const g=S.goals.find(g=>g.id===el.dataset.id); if(g){g.status='active'; save(); render();} }
+  else if(a==='goal-done'){ const g=S.goals.find(x=>x.id===el.dataset.id); if(g){g.status='done'; save(); render();} }
+  else if(a==='goal-reopen'){ const g=S.goals.find(x=>x.id===el.dataset.id); if(g){g.status='active'; save(); render();} }
   else if(a==='goal-del'){
     if(confirm('Delete this goal, its milestones and tasks?')){
       S.goals = S.goals.filter(g=>g.id!==el.dataset.id); save(); render();
     }
   }
   else if(a==='ms-del'){
-    const g = S.goals.find(g=>g.id===el.dataset.goal);
+    const g = S.goals.find(x=>x.id===el.dataset.goal);
     if(g && confirm('Delete this milestone and its tasks?')){
       g.milestones = g.milestones.filter(m=>m.id!==el.dataset.id); save(); render();
     }
   }
   else if(a==='task-del'){
-    const g = S.goals.find(g=>g.id===el.dataset.goal);
-    const m = g && g.milestones.find(m=>m.id===el.dataset.ms);
+    const g = S.goals.find(x=>x.id===el.dataset.goal);
+    const m = g && g.milestones.find(x=>x.id===el.dataset.ms);
     if(m){ m.tasks = m.tasks.filter(t=>t.id!==el.dataset.id); save(); render(); }
   }
   else if(a==='dl-add'){ openDeadlineDlg(null); }
@@ -849,7 +598,7 @@ document.getElementById('main').addEventListener('click', e=>{
 document.getElementById('main').addEventListener('change', e=>{
   const input = e.target;
   if(input.dataset.habit){
-    const h = S.habits.find(h=>h.id===input.dataset.habit);
+    const h = S.habits.find(x=>x.id===input.dataset.habit);
     if(h){
       h.log = h.log || {};
       const t = todayKey();
@@ -857,17 +606,17 @@ document.getElementById('main').addEventListener('change', e=>{
       save(); renderSoon();
     }
   } else if(input.dataset.task){
-    const g = S.goals.find(g=>g.id===input.dataset.goal);
+    const g = S.goals.find(x=>x.id===input.dataset.goal);
     if(g){
       for(const m of g.milestones){
         const tk = m.tasks.find(t=>t.id===input.dataset.task);
         if(tk){ tk.done = input.checked; tk.doneAt = input.checked ? Date.now() : null; break; }
       }
-      save(); input.checked ? renderSoon() : render();
+      save(); if(input.checked) renderSoon(); else render();
     }
   } else if(input.dataset.deadline){
-    const d = S.deadlines.find(d=>d.id===input.dataset.deadline);
-    if(d){ d.done = input.checked; d.doneAt = input.checked ? Date.now() : null; save(); input.checked ? renderSoon() : render(); }
+    const d = S.deadlines.find(x=>x.id===input.dataset.deadline);
+    if(d){ d.done = input.checked; d.doneAt = input.checked ? Date.now() : null; save(); if(input.checked) renderSoon(); else render(); }
   }
 });
 
@@ -878,12 +627,12 @@ document.getElementById('main').addEventListener('submit', e=>{
   e.preventDefault();
   const kind = f.dataset.form;
   if(kind==='ms-add'){
-    const g = S.goals.find(g=>g.id===f.dataset.goal);
+    const g = S.goals.find(x=>x.id===f.dataset.goal);
     const v = f.title.value.trim();
     if(g && v){ g.milestones.push({id:uid(), title:v, tasks:[]}); openGoals.add(g.id); save(); render(); }
   } else if(kind==='task-add'){
-    const g = S.goals.find(g=>g.id===f.dataset.goal);
-    const m = g && g.milestones.find(m=>m.id===f.dataset.ms);
+    const g = S.goals.find(x=>x.id===f.dataset.goal);
+    const m = g && g.milestones.find(x=>x.id===f.dataset.ms);
     const v = f.title.value.trim();
     if(m && v){ m.tasks.push({id:uid(), title:v, done:false, doneAt:null}); openGoals.add(g.id); save(); render(); }
   } else if(kind==='wo-add'){
@@ -911,7 +660,8 @@ document.addEventListener('mouseover', e=>{
 });
 document.addEventListener('scroll', ()=>{ tip.style.opacity = 0; }, true);
 
+/* ================= boot ================= */
 render();
-</script>
-</body>
-</html>
+pullRemote();
+/* re-sync when the tab comes back to the foreground */
+document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullRemote(); });

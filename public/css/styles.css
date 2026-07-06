@@ -1,0 +1,285 @@
+/* ================= reset / tokens ================= */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --ink:#000;
+  --paper:#fff;
+  --g1:#f5f5f5;   /* subtle surface */
+  --g2:#ececec;   /* empty marks, tracks */
+  --g3:#d4d4d4;   /* input borders */
+  --g4:#8a8a8a;   /* secondary text */
+  --g5:#525252;   /* tertiary ink */
+  --line:#e7e7e7; /* hairlines */
+  --btn-hover:#2b2b2b;
+  --fq1:#ededed;--fq2:#d4d4d4;--fq3:#a3a3a3;--fq4:#525252;--fq5:#000; /* feeling ramp, light→dark */
+  --radius:8px;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --ink:#fff;
+  --paper:#000;
+  --g1:#101010;
+  --g2:#1e1e1e;
+  --g3:#3a3a3a;
+  --g4:#8a8a8a;
+  --g5:#bdbdbd;
+  --line:#222;
+  --btn-hover:#d6d6d6;
+  --fq1:#242424;--fq2:#3f3f3f;--fq3:#6f6f6f;--fq4:#b3b3b3;--fq5:#fff;
+  color-scheme:dark;
+}
+
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,sans-serif;
+  background:var(--paper);color:var(--ink);
+  font-size:15px;line-height:1.5;
+  padding-bottom:76px; /* room for the mobile bottom nav */
+  transition:background .2s ease,color .2s ease;
+}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+input,select,textarea{font:inherit;color:var(--ink)}
+::placeholder{color:var(--g4)}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:760px;margin:0 auto;padding:0 20px}
+
+/* ================= header / nav ================= */
+header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.head-row{display:flex;align-items:center;justify-content:space-between;height:56px}
+.wordmark{font-weight:700;font-size:13px;letter-spacing:.22em}
+.head-right{display:flex;align-items:center;gap:10px}
+nav{display:flex;gap:2px}
+nav button{
+  padding:6px 12px;font-size:13px;font-weight:500;color:var(--g4);
+  border-radius:6px;transition:color .15s;
+}
+nav button:hover{color:var(--ink)}
+nav button.active{color:var(--paper);background:var(--ink)}
+#theme-toggle{
+  width:32px;height:32px;border-radius:50%;font-size:17px;line-height:1;
+  display:flex;align-items:center;justify-content:center;color:var(--ink);
+  border:1px solid var(--line);
+}
+#theme-toggle:hover{border-color:var(--ink)}
+.sync{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--g4);border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+@media (max-width:679px){
+  nav{
+    position:fixed;bottom:0;left:0;right:0;z-index:20;
+    background:var(--paper);border-top:1px solid var(--line);
+    justify-content:space-around;padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+  }
+  nav button{flex:1;text-align:center;padding:8px 2px;font-size:12.5px}
+}
+
+/* ================= layout ================= */
+main{padding:28px 20px 40px}
+section{margin-bottom:38px}
+.micro{
+  font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--g4);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.micro .linkish{letter-spacing:0;text-transform:none}
+.linkish{
+  color:var(--g4);text-decoration:underline;text-underline-offset:3px;
+  font-size:12px;font-weight:500;
+}
+.linkish:hover{color:var(--ink)}
+h1.day{font-size:22px;font-weight:700;margin-bottom:2px}
+.sub{color:var(--g4);font-size:13px}
+.empty{color:var(--g4);font-size:13px;padding:14px 0}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.row-list>*+*{border-top:1px solid var(--line)}
+
+/* ================= buttons / chips ================= */
+.btn{
+  background:var(--ink);color:var(--paper);border-radius:6px;
+  padding:8px 14px;font-size:13px;font-weight:600;
+  transition:background .15s;
+}
+.btn:hover{background:var(--btn-hover)}
+.btn-ghost{
+  background:none;color:var(--ink);border:1px solid var(--g3);border-radius:6px;
+  padding:7px 13px;font-size:13px;font-weight:500;
+}
+.btn-ghost:hover{border-color:var(--ink)}
+.x{color:var(--g3);font-size:15px;line-height:1;padding:4px 6px;border-radius:4px;flex-shrink:0}
+.x:hover{color:var(--ink)}
+.chip{
+  display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.04em;
+  border:1px solid var(--g3);border-radius:999px;padding:1px 8px;color:var(--g5);
+  white-space:nowrap;
+}
+.chip.solid{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chip.faint{border-color:var(--g2);color:var(--g4)}
+
+/* ================= checkbox (uiverse.io stroke-draw checkmark, monochrome) ================= */
+.cb{display:inline-flex;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cb input{position:absolute;opacity:0;pointer-events:none}
+.cb .box{
+  width:22px;height:22px;border:1.5px solid var(--ink);border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;
+}
+.cb.round .box{border-radius:50%;width:40px;height:40px}
+.cb svg{width:12px;height:12px;overflow:visible}
+.cb.round svg{width:16px;height:16px}
+.cb svg path{
+  fill:none;stroke:var(--paper);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:24;stroke-dashoffset:24;
+  transition:stroke-dashoffset .22s ease .05s;
+}
+.cb input:checked + .box{background:var(--ink);animation:pop .28s ease}
+.cb input:checked + .box path{stroke-dashoffset:0}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(.86)}100%{transform:scale(1)}}
+
+/* ================= habits + contribution calendar ================= */
+.habit{display:flex;align-items:center;gap:14px;padding:14px 0;flex-wrap:wrap}
+.habit .hmeta{flex:1;min-width:140px}
+.habit .hname{font-weight:600;font-size:14.5px}
+.habit .hstreak{font-size:12px;color:var(--g4)}
+.habit.done .hname{color:var(--g5)}
+
+/* calendar = month labels + weekday rail + 8-week cell grid (CSS-grid contribution-graph pattern) */
+.cal{flex-shrink:0}
+.cal-months{
+  display:grid;grid-template-columns:repeat(8,10px);gap:3px;
+  margin-left:17px;height:13px;font-size:9px;color:var(--g4);
+}
+.cal-months span{grid-row:1;white-space:nowrap;line-height:1.2}
+.cal-row{display:flex;gap:4px}
+.cal-days{
+  display:grid;grid-template-rows:repeat(7,10px);gap:3px;
+  width:13px;font-size:8.5px;color:var(--g4);
+}
+.cal-days i{font-style:normal;line-height:10px}
+.heat{display:grid;grid-template-rows:repeat(7,10px);grid-auto-flow:column;grid-auto-columns:10px;gap:3px}
+.heat i{width:10px;height:10px;border-radius:3px;background:var(--g2)}
+.heat i.on{background:var(--ink)}
+.heat i.future{visibility:hidden}
+.heat i.tc{box-shadow:0 0 0 1px var(--paper),0 0 0 2.5px var(--g4)}
+@media (max-width:430px){
+  .habit .cal{margin-left:54px} /* wraps under the name, aligned past the circle */
+}
+
+/* ================= progress ring / bar (shadcn-ecosystem patterns) ================= */
+.ring{width:46px;height:46px;flex-shrink:0}
+.ring .track{stroke:var(--g2)}
+.ring .fill{stroke:var(--ink);transition:stroke-dashoffset .4s ease}
+.ring text{font-size:9.5px;font-weight:600;fill:var(--ink)}
+.bar{height:3px;background:var(--g2);border-radius:999px;overflow:hidden;flex:1}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:999px;transition:width .3s ease}
+
+/* ================= goals ================= */
+.goal-card{border:1px solid var(--line);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.goal-head{display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.goal-head:hover{background:var(--g1)}
+.goal-title{font-weight:600;font-size:15px}
+.goal-why{font-size:12.5px;color:var(--g4)}
+.goal-body{border-top:1px solid var(--line);padding:16px;display:none}
+.goal-card.open .goal-body{display:block}
+.ms{margin-bottom:18px}
+.ms-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.ms-title{font-weight:600;font-size:13.5px;flex-shrink:0}
+.ms-pct{font-size:11px;color:var(--g4);flex-shrink:0;min-width:30px;text-align:right}
+.task{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:14px}
+.task.done span{color:var(--g4);text-decoration:line-through}
+.inline-add{display:flex;gap:8px;margin-top:6px}
+.inline-add input{
+  flex:1;border:none;border-bottom:1px solid var(--g2);padding:4px 0;
+  font-size:13px;outline:none;background:none;border-radius:0;
+}
+.inline-add input:focus{border-color:var(--ink)}
+.inline-add input:focus-visible{outline:none}
+.inline-add button{font-size:12px;font-weight:600;color:var(--g4);white-space:nowrap}
+.inline-add button:hover{color:var(--ink)}
+.goal-foot{display:flex;gap:16px;margin-top:10px}
+.goal-foot .linkish{font-size:12px}
+
+/* next actions on home */
+.na{display:flex;align-items:center;gap:10px;padding:10px 0}
+.na .nag{font-size:11.5px;color:var(--g4)}
+
+/* ================= school ================= */
+.dl{display:flex;align-items:center;gap:12px;padding:12px 0}
+.dl .dmeta{flex:1;min-width:0}
+.dl .dtitle{font-size:14px;font-weight:500}
+.dl.done .dtitle{color:var(--g4);text-decoration:line-through}
+.dl .dtags{display:flex;gap:6px;margin-top:3px;flex-wrap:wrap}
+.due{font-size:12px;font-weight:600;white-space:nowrap}
+.due.over{background:var(--ink);color:var(--paper);padding:2px 8px;border-radius:4px}
+.due.soon{color:var(--ink)}
+.due.later{color:var(--g4);font-weight:500}
+
+/* ================= sleep ================= */
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{
+  min-width:38px;height:34px;border:1px solid var(--g3);border-radius:6px;
+  font-size:13px;font-weight:600;transition:background .12s,color .12s,border-color .12s;padding:0 8px;
+}
+.seg button:hover{border-color:var(--ink)}
+.seg button.sel{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sleep-row{display:flex;align-items:baseline;gap:10px;margin-bottom:10px}
+.sleep-row .lab{font-size:12px;color:var(--g4);width:52px;flex-shrink:0}
+.sleep-row:last-child{margin-bottom:0}
+.chart-wrap{overflow-x:auto}
+.chart-wrap svg{display:block;width:100%;height:auto;min-width:420px}
+.legend{font-size:11.5px;color:var(--g4);margin-top:8px}
+
+/* chart marks — theme-aware via CSS, never hardcoded fills */
+.c-bar{fill:var(--ink)}
+.c-bar:hover{opacity:.7}
+.c-none{fill:var(--g2)}
+.c-ref{stroke:var(--g3)}
+.c-lab{fill:var(--g4)}
+.fq0{fill:none;stroke:var(--g2)}
+.fq1{fill:var(--fq1)}.fq2{fill:var(--fq2)}.fq3{fill:var(--fq3)}.fq4{fill:var(--fq4)}.fq5{fill:var(--fq5)}
+
+/* ================= workouts ================= */
+.wo-form{display:grid;grid-template-columns:1fr 90px;gap:10px}
+.wo-form input{border:1px solid var(--g3);border-radius:6px;padding:8px 10px;font-size:14px;outline:none;width:100%;background:var(--paper)}
+.wo-form input:focus{border-color:var(--ink)}
+.wo-form .full{grid-column:1/-1}
+.wo{display:flex;align-items:baseline;gap:10px;padding:11px 0;font-size:14px}
+.wo .wdate{font-size:12px;color:var(--g4);width:56px;flex-shrink:0}
+.wo .wnote{color:var(--g4);font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ================= review ================= */
+.rv-item{padding:8px 0;font-size:14px;display:flex;gap:12px;align-items:baseline}
+.rv-item .when{font-size:11.5px;color:var(--g4);flex-shrink:0;min-width:44px}
+textarea{
+  width:100%;border:1px solid var(--g3);border-radius:6px;padding:10px 12px;
+  min-height:96px;resize:vertical;outline:none;font-size:14px;background:var(--paper);
+}
+textarea:focus{border-color:var(--ink)}
+.stat-line{display:flex;gap:28px;flex-wrap:wrap;margin-bottom:8px}
+.stat b{font-size:22px;font-weight:700;display:block;line-height:1.2}
+.stat span{font-size:11.5px;color:var(--g4)}
+
+/* ================= dialogs / forms ================= */
+dialog{
+  border:1px solid var(--g3);border-radius:10px;padding:24px;
+  width:min(92vw,420px);margin:auto;background:var(--paper);color:var(--ink);
+}
+dialog::backdrop{background:rgba(0,0,0,.55)}
+dialog h2{font-size:15px;font-weight:700;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--g4);margin-bottom:5px}
+.field input,.field select{
+  width:100%;border:1px solid var(--g3);border-radius:6px;padding:9px 11px;
+  font-size:14px;outline:none;background:var(--paper);
+}
+.field input:focus,.field select:focus{border-color:var(--ink)}
+.field.check{display:flex;align-items:center;gap:10px}
+.field.check input{width:auto;accent-color:var(--ink)}
+.field.check label{margin:0;text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--ink)}
+.dlg-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:20px}
+
+/* ================= tooltip ================= */
+#tooltip{
+  position:fixed;z-index:50;background:var(--ink);color:var(--paper);
+  font-size:11.5px;font-weight:500;padding:4px 9px;border-radius:5px;
+  pointer-events:none;opacity:0;transition:opacity .1s;white-space:nowrap;
+}
+
+@media (min-width:680px){body{padding-bottom:0}}
