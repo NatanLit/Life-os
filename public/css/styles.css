@@ -45,8 +45,12 @@ input,select,textarea{font:inherit;color:var(--ink)}
 .wrap{max-width:760px;margin:0 auto;padding:0 20px}
 
 /* ================= header / nav ================= */
-header{border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
-.head-row{display:flex;align-items:center;justify-content:space-between;height:56px}
+header{
+  background:var(--paper);position:sticky;top:0;z-index:20;
+  border-bottom:1px solid transparent;transition:border-color .2s ease;
+}
+header.scrolled{border-bottom-color:var(--line)}
+.head-row{display:flex;align-items:center;justify-content:space-between;height:60px}
 .wordmark{font-weight:700;font-size:13px;letter-spacing:.22em}
 .head-right{display:flex;align-items:center;gap:10px}
 nav{display:flex;gap:2px}
@@ -73,7 +77,8 @@ nav button.active{color:var(--paper);background:var(--ink)}
 }
 
 /* ================= layout ================= */
-main{padding:28px 20px 40px}
+main{padding:44px 20px 48px}
+@media (max-width:679px){main{padding-top:32px}}
 section{margin-bottom:38px}
 .micro{
   font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
@@ -256,10 +261,44 @@ textarea:focus{border-color:var(--ink)}
 .stat b{font-size:22px;font-weight:700;display:block;line-height:1.2}
 .stat span{font-size:11.5px;color:var(--g4)}
 
+/* ================= date picker (adapted from the shadcn/ui Calendar pattern, monochrome) ================= */
+.dp{position:relative}
+.dp-display{cursor:pointer}
+.dp-display.shake{animation:shake .3s ease;border-color:var(--ink)}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.dp-pop{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:30;
+  background:var(--paper);border:1px solid var(--g3);border-radius:10px;
+  padding:12px;width:268px;
+}
+.dp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dp-title{font-size:13px;font-weight:600}
+.dp-nav{
+  width:28px;height:28px;border:1px solid var(--line);border-radius:6px;
+  font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;color:var(--g5);
+}
+.dp-nav:hover{border-color:var(--ink);color:var(--ink)}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dp-wd{
+  font-size:10px;font-weight:600;color:var(--g4);text-align:center;
+  padding:4px 0;text-transform:uppercase;letter-spacing:.04em;
+}
+.dp-day{
+  height:30px;border-radius:6px;font-size:12.5px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .1s;
+}
+.dp-day:hover{background:var(--g1)}
+.dp-day.out{color:var(--g3)}
+.dp-day.today{box-shadow:inset 0 0 0 1px var(--g4)}
+.dp-day.sel{background:var(--ink);color:var(--paper)}
+.dp-day.sel:hover{background:var(--ink)}
+
 /* ================= dialogs / forms ================= */
 dialog{
   border:1px solid var(--g3);border-radius:10px;padding:24px;
   width:min(92vw,420px);margin:auto;background:var(--paper);color:var(--ink);
+  overflow:visible; /* let the date-picker popover extend past the dialog edge */
 }
 dialog::backdrop{background:rgba(0,0,0,.55)}
 dialog h2{font-size:15px;font-weight:700;margin-bottom:16px}

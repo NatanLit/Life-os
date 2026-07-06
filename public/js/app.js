@@ -459,13 +459,85 @@ const dlgHabit = document.getElementById('dlg-habit');
 const dlgDeadline = document.getElementById('dlg-deadline');
 document.querySelectorAll('dialog [data-close]').forEach(b=>b.addEventListener('click', ()=>b.closest('dialog').close()));
 
+/* ================= date picker (adapted from the shadcn/ui Calendar pattern, monochrome) ================= */
+const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function datePicker(rootId){
+  const root = document.getElementById(rootId);
+  const input = root.querySelector('.dp-display');
+  const pop = root.querySelector('.dp-pop');
+  let vy = 0, vm = 0; // viewed year / month
+  const fmt = iso => { const d = parseKey(iso); return MONTHS[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear(); };
+  function renderCal(){
+    const sel = input.dataset.iso || '';
+    const t = todayKey();
+    const start = monday(new Date(vy, vm, 1));
+    let cells = '';
+    for(let i=0;i<42;i++){
+      const d = addDays(start, i);
+      const iso = dkey(d);
+      cells += '<button type="button" class="dp-day'+(d.getMonth()!==vm?' out':'')+(iso===t?' today':'')
+        +(iso===sel?' sel':'')+'" data-day="'+iso+'">'+d.getDate()+'</button>';
+    }
+    pop.innerHTML = '<div class="dp-head">'
+      + '<button type="button" class="dp-nav" data-cal="prev" aria-label="Previous month">‹</button>'
+      + '<span class="dp-title">'+MONTHS_FULL[vm]+' '+vy+'</span>'
+      + '<button type="button" class="dp-nav" data-cal="next" aria-label="Next month">›</button></div>'
+      + '<div class="dp-grid">'
+      + ['Mo','Tu','We','Th','Fr','Sa','Su'].map(w=>'<span class="dp-wd">'+w+'</span>').join('')
+      + cells + '</div>';
+  }
+  function open(){
+    const base = parseKey(input.dataset.iso || todayKey());
+    vy = base.getFullYear(); vm = base.getMonth();
+    renderCal(); pop.hidden = false;
+  }
+  const close = () => { pop.hidden = true; };
+  input.addEventListener('click', ()=> pop.hidden ? open() : close());
+  pop.addEventListener('click', e=>{
+    const nav = e.target.closest('[data-cal]');
+    if(nav){
+      vm += nav.dataset.cal==='next' ? 1 : -1;
+      if(vm < 0){ vm = 11; vy--; } else if(vm > 11){ vm = 0; vy++; }
+      renderCal(); return;
+    }
+    const day = e.target.closest('[data-day]');
+    if(day){ api.value = day.dataset.day; close(); }
+  });
+  const api = {
+    get value(){ return input.dataset.iso || ''; },
+    set value(iso){ input.dataset.iso = iso || ''; input.value = iso ? fmt(iso) : ''; },
+    flagEmpty(){
+      input.classList.add('shake'); input.focus();
+      setTimeout(()=>input.classList.remove('shake'), 500);
+    },
+    close
+  };
+  return api;
+}
+const DP = { goal: datePicker('dp-goal'), due: datePicker('dp-due') };
+document.addEventListener('click', e=>{
+  /* month-nav clicks re-render the popover, detaching the click target — a detached
+     node has no .dp ancestor and would falsely read as an outside click */
+  if(!(e.target instanceof Element) || !e.target.isConnected) return;
+  if(!e.target.closest('.dp')){ DP.goal.close(); DP.due.close(); }
+});
+[dlgGoal, dlgDeadline].forEach(d=>{
+  /* Esc closes an open calendar first, the dialog second */
+  d.addEventListener('cancel', e=>{
+    const openPop = d.querySelector('.dp-pop:not([hidden])');
+    if(openPop){ e.preventDefault(); openPop.hidden = true; }
+  });
+  d.addEventListener('close', ()=>{ DP.goal.close(); DP.due.close(); });
+});
+
 function openGoalDlg(g){
   const f = document.getElementById('form-goal');
   f.reset();
   f.id.value = g ? g.id : '';
   document.getElementById('dlg-goal-title').textContent = g ? 'Edit goal' : 'New goal';
   document.getElementById('goal-status-field').hidden = !g;
-  if(g){ f.title.value=g.title; f.why.value=g.why||''; f.deadline.value=g.deadline; f.status.value=g.status; }
+  DP.goal.value = g ? g.deadline : '';
+  if(g){ f.title.value=g.title; f.why.value=g.why||''; f.status.value=g.status; }
   dlgGoal.showModal();
 }
 function openHabitDlg(h){
@@ -486,18 +558,21 @@ function openDeadlineDlg(d){
   const sel = f.goalId;
   sel.innerHTML = '<option value="">—</option>' + S.goals.filter(g=>g.status!=='done')
     .map(g=>'<option value="'+g.id+'">'+esc(g.title)+'</option>').join('');
-  if(d){ f.title.value=d.title; f.subject.value=d.subject; f.due.value=d.due; f.priority.value=d.priority; f.goalId.value=d.goalId||''; }
+  DP.due.value = d ? d.due : '';
+  if(d){ f.title.value=d.title; f.subject.value=d.subject; f.priority.value=d.priority; f.goalId.value=d.goalId||''; }
   dlgDeadline.showModal();
 }
 
 document.getElementById('form-goal').addEventListener('submit', e=>{
   e.preventDefault();
   const f = e.target;
+  const deadline = DP.goal.value;
+  if(!deadline){ DP.goal.flagEmpty(); return; }
   if(f.id.value){
     const g = S.goals.find(x=>x.id===f.id.value);
-    if(g){ g.title=f.title.value.trim(); g.why=f.why.value.trim(); g.deadline=f.deadline.value; g.status=f.status.value; }
+    if(g){ g.title=f.title.value.trim(); g.why=f.why.value.trim(); g.deadline=deadline; g.status=f.status.value; }
   } else {
-    S.goals.push({id:uid(), title:f.title.value.trim(), why:f.why.value.trim(), deadline:f.deadline.value, status:'active', milestones:[]});
+    S.goals.push({id:uid(), title:f.title.value.trim(), why:f.why.value.trim(), deadline, status:'active', milestones:[]});
   }
   save(); dlgGoal.close(); view='goals'; render();
 });
@@ -527,11 +602,13 @@ document.getElementById('habit-delete').addEventListener('click', ()=>{
 document.getElementById('form-deadline').addEventListener('submit', e=>{
   e.preventDefault();
   const f = e.target;
+  const due = DP.due.value;
+  if(!due){ DP.due.flagEmpty(); return; }
   if(f.id.value){
     const d = S.deadlines.find(x=>x.id===f.id.value);
-    if(d){ d.title=f.title.value.trim(); d.subject=f.subject.value.trim(); d.due=f.due.value; d.priority=f.priority.value; d.goalId=f.goalId.value||null; }
+    if(d){ d.title=f.title.value.trim(); d.subject=f.subject.value.trim(); d.due=due; d.priority=f.priority.value; d.goalId=f.goalId.value||null; }
   } else {
-    S.deadlines.push({id:uid(), title:f.title.value.trim(), subject:f.subject.value.trim(), due:f.due.value, priority:f.priority.value, goalId:f.goalId.value||null, done:false});
+    S.deadlines.push({id:uid(), title:f.title.value.trim(), subject:f.subject.value.trim(), due, priority:f.priority.value, goalId:f.goalId.value||null, done:false});
   }
   save(); dlgDeadline.close(); render();
 });
@@ -661,6 +738,10 @@ document.addEventListener('mouseover', e=>{
 document.addEventListener('scroll', ()=>{ tip.style.opacity = 0; }, true);
 
 /* ================= boot ================= */
+/* hairline under the header only once content scrolls beneath it */
+const headerEl = document.querySelector('header');
+addEventListener('scroll', ()=> headerEl.classList.toggle('scrolled', scrollY > 4), {passive:true});
+
 render();
 pullRemote();
 /* re-sync when the tab comes back to the foreground */

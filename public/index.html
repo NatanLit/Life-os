@@ -39,7 +39,12 @@
     <input type="hidden" name="id">
     <div class="field"><label>Title</label><input name="title" required maxlength="80" placeholder="e.g. Get 7 in MYP Mathematics"></div>
     <div class="field"><label>Why (one line)</label><input name="why" maxlength="120" placeholder="Why does this matter to you?"></div>
-    <div class="field"><label>Deadline</label><input name="deadline" type="date" required></div>
+    <div class="field"><label>Deadline</label>
+      <div class="dp" id="dp-goal">
+        <input type="text" class="dp-display" placeholder="Select a date" readonly aria-haspopup="dialog">
+        <div class="dp-pop" hidden></div>
+      </div>
+    </div>
     <div class="field" id="goal-status-field" hidden><label>Status</label>
       <select name="status"><option value="active">Active</option><option value="paused">Paused</option><option value="done">Done</option></select>
     </div>
@@ -74,7 +79,12 @@
         <option>Individuals &amp; Societies</option><option>Design</option><option>PHE</option><option>Arts</option>
       </datalist>
     </div>
-    <div class="field"><label>Due date</label><input name="due" type="date" required></div>
+    <div class="field"><label>Due date</label>
+      <div class="dp" id="dp-due">
+        <input type="text" class="dp-display" placeholder="Select a date" readonly aria-haspopup="dialog">
+        <div class="dp-pop" hidden></div>
+      </div>
+    </div>
     <div class="field"><label>Priority</label>
       <select name="priority"><option value="high">High</option><option value="med" selected>Medium</option><option value="low">Low</option></select>
     </div>
