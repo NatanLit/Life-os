@@ -15,6 +15,8 @@ async function getBody(req) {
 }
 
 module.exports = async (req, res) => {
+  // never let a CDN/proxy cache state responses — every device must see live data
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   if (!auth.ok(req)) { res.status(401).json({ error: 'unauthorized' }); return; }
   try {
     if (req.method === 'GET') {

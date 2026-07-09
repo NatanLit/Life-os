@@ -11,6 +11,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json({ limit: '2mb' }));
 
+app.use('/api', (req, res, next) => { res.set('Cache-Control', 'no-store, no-cache, must-revalidate'); next(); });
+
 function gate(req, res, next) {
   if (auth.ok(req)) return next();
   res.status(401).json({ error: 'unauthorized' });

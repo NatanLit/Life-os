@@ -16,7 +16,7 @@ document.getElementById('theme-toggle').addEventListener('click', () =>
 const KEY = 'lifeos.v1';
 /* tombstones: { id -> deletedAt } for top-level items (goals/habits/workouts/deadlines),
    so a delete on one device isn't resurrected when another device's stale copy is merged in */
-const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, tombstones:{}, updatedAt:0 };
+const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, tombstones:{}, rev:0, updatedAt:0 };
 let S = Object.assign({}, DEFAULT_STATE);
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){ /* corrupt local cache — start clean */ }
 
@@ -25,7 +25,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 
 /* Bump on every deploy so you can eyeball, on each device, whether it's running the latest
    code (a stale cache shows an older tag). Printed to the console and shown in the footer. */
-const BUILD = 'build 2026-07-09 · sync-v4';
+const BUILD = 'build 2026-07-09 · sync-v6';
 function markSynced(){
   const el = document.getElementById('synced-at');
   if(el) el.textContent = 'synced ' + new Date().toLocaleTimeString();
@@ -36,11 +36,18 @@ const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
 
 function setOffline(off){ document.getElementById('sync').hidden = !off; }
 
-/* The API stores one full JSON document — a PUT replaces it wholesale. If this device's
-   copy of S is stale (e.g. a tab left open since before another device's edit), pushing it
-   as-is would silently erase whatever the other device added. So before every push we fold
-   in whatever is on the server: remote-only items survive, this device's own edits win on
-   conflicts, and tombstones keep deletions from being resurrected by the union. */
+/* ----- sync model (server is the source of truth) -----
+   The whole state is one JSON document. The one thing that decides push-vs-adopt is a
+   `dirty` flag — do we hold edits the server hasn't confirmed yet? — NOT a clock comparison,
+   so a device with a skewed clock can't get stuck ignoring the other device.
+     • not dirty  → adopt the server's copy wholesale (it is the truth)
+     • dirty      → fold the server's copy into ours (union, so neither device loses items),
+                    push the result, and clear dirty once the server confirms
+   Tombstones keep a delete on one device from being resurrected by the union. */
+const DIRTY_KEY = 'lifeos.dirty';
+let dirty = localStorage.getItem(DIRTY_KEY) === '1';
+let syncing = false, syncAgain = false;
+
 const TOMB_TTL = 60 * 864e5; // forget deletions after 60 days so the tombstone map can't grow forever
 function tombstone(id){ S.tombstones = S.tombstones || {}; S.tombstones[id] = Date.now(); }
 function mergeTombstones(local, remote){
@@ -59,80 +66,80 @@ function mergeArrays(local, remote, dead){
   return out;
 }
 function mergeDicts(local, remote){ return Object.assign({}, remote||{}, local||{}); } // local wins on shared keys
-function applyDead(dead){
-  S.goals = (S.goals||[]).filter(x=>!dead[x.id]);
-  S.habits = (S.habits||[]).filter(x=>!dead[x.id]);
-  S.workouts = (S.workouts||[]).filter(x=>!dead[x.id]);
-  S.deadlines = (S.deadlines||[]).filter(x=>!dead[x.id]);
-}
-async function mergeRemoteIn(){
-  try {
-    const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
-    if(!r.ok) return;
-    const remote = await r.json();
-    const dead = mergeTombstones(S.tombstones, remote.tombstones);
-    S.tombstones = dead;
-    S.goals = mergeArrays(S.goals, remote.goals, dead);
-    S.habits = mergeArrays(S.habits, remote.habits, dead);
-    S.workouts = mergeArrays(S.workouts, remote.workouts, dead);
-    S.deadlines = mergeArrays(S.deadlines, remote.deadlines, dead);
-    S.sleep = mergeDicts(S.sleep, remote.sleep);
-    S.reviews = mergeDicts(S.reviews, remote.reviews);
-  } catch(e){ /* offline — push whatever we have; the server's 409 check still guards against clobbering a newer write */ }
+/* fold the server's document into our local edits (used only while dirty) */
+function mergeInto(remote){
+  const dead = mergeTombstones(S.tombstones, remote.tombstones);
+  S.tombstones = dead;
+  S.goals = mergeArrays(S.goals, remote.goals, dead);
+  S.habits = mergeArrays(S.habits, remote.habits, dead);
+  S.workouts = mergeArrays(S.workouts, remote.workouts, dead);
+  S.deadlines = mergeArrays(S.deadlines, remote.deadlines, dead);
+  S.sleep = mergeDicts(S.sleep, remote.sleep);
+  S.reviews = mergeDicts(S.reviews, remote.reviews);
 }
 
-let pushTimer = null;
-function pushSoon(){ if(!HAS_API) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 500); }
-async function pushNow(){
+function markDirty(){ dirty = true; localStorage.setItem(DIRTY_KEY, '1'); }
+function clearDirty(){ dirty = false; localStorage.removeItem(DIRTY_KEY); }
+
+let syncTimer = null;
+function scheduleSync(){ if(!HAS_API) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 400); }
+
+async function syncNow(){
   if(!HAS_API) return 'ok';
-  try {
-    await mergeRemoteIn();
-    S.updatedAt = Date.now();
-    localStorage.setItem(KEY, JSON.stringify(S));
-    const r = await fetch('/api/state', {
-      method:'PUT',
-      headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
-      body: JSON.stringify(S)
-    });
-    if(r.status === 401){ showGate(!!ACCESS); return 'unauthorized'; }
-    if(r.status === 409){
-      const j = await r.json();
-      if(j.state){ S = Object.assign({}, DEFAULT_STATE, j.state); localStorage.setItem(KEY, JSON.stringify(S)); render(); }
-    } else if(r.ok){
-      render(); // reflect anything mergeRemoteIn() folded in from another device
-    }
-    setOffline(!r.ok && r.status !== 409);
-    if(r.ok || r.status === 409) markSynced();
-    return (r.ok || r.status === 409) ? 'ok' : 'offline';
-  } catch(e){ setOffline(true); return 'offline'; }
-}
-async function pullRemote(){
-  if(!HAS_API) return 'ok';
+  if(syncing){ syncAgain = true; return 'busy'; } // never overlap two syncs; coalesce instead
+  syncing = true;
+  let result = 'ok';
   try {
     const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
-    if(r.status === 401){ showGate(!!ACCESS); return 'unauthorized'; }
-    if(!r.ok) throw new Error('bad status');
-    const remote = await r.json();
-    if((remote.updatedAt || 0) > (S.updatedAt || 0)){
-      const dead = mergeTombstones(S.tombstones, remote.tombstones); // keep our not-yet-pushed deletions
-      S = Object.assign({}, DEFAULT_STATE, remote);
-      S.tombstones = dead;
-      applyDead(dead);
-      localStorage.setItem(KEY, JSON.stringify(S));
-      render();
-    } else if((S.updatedAt || 0) > (remote.updatedAt || 0)){
-      pushNow();
+    if(r.status === 401){ showGate(!!ACCESS); result = 'unauthorized'; }
+    else if(!r.ok){ setOffline(true); result = 'offline'; }
+    else {
+      let base = await r.json();
+      if(dirty){
+        // read-merge-write against the server's revision; on a 409 (someone wrote in between)
+        // re-merge the newer state and retry with its revision. Terminates once no one races us.
+        let done = false;
+        for(let tries = 0; tries < 6 && !done; tries++){
+          mergeInto(base);
+          S.updatedAt = Date.now();
+          localStorage.setItem(KEY, JSON.stringify(S));
+          const body = Object.assign({}, S, { baseRev: base.rev || 0 });
+          const pr = await fetch('/api/state', {
+            method:'PUT',
+            headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
+            body: JSON.stringify(body)
+          });
+          if(pr.status === 401){ showGate(!!ACCESS); result = 'unauthorized'; done = true; }
+          else if(pr.ok){
+            const j = await pr.json(); S.rev = j.rev;
+            clearDirty(); localStorage.setItem(KEY, JSON.stringify(S));
+            render(); setOffline(false); hideGate(); markSynced(); done = true;
+          }
+          else if(pr.status === 409){ const j = await pr.json(); base = j.state || base; } // re-merge & retry
+          else { setOffline(true); result = 'offline'; done = true; }
+        }
+      } else {
+        // no unpushed edits → the server is authoritative; take its copy
+        const changed = JSON.stringify(base) !== JSON.stringify(S);
+        S = Object.assign({}, DEFAULT_STATE, base);
+        localStorage.setItem(KEY, JSON.stringify(S));
+        if(changed) render();
+        setOffline(false); hideGate(); markSynced();
+      }
     }
-    setOffline(false);
-    hideGate();
-    markSynced();
-    return 'ok';
-  } catch(e){ setOffline(true); return 'offline'; }
+  } catch(e){ setOffline(true); result = 'offline'; }
+  syncing = false;
+  if(syncAgain){ syncAgain = false; return syncNow(); } // a change landed mid-sync — run once more
+  return result;
 }
+/* kept as an alias so existing call sites (boot, foreground, poll, Sync-now) read naturally */
+const pullRemote = syncNow;
+
 function save(){
   S.updatedAt = Date.now();
+  markDirty();
   localStorage.setItem(KEY, JSON.stringify(S));
-  pushSoon();
+  scheduleSync();
 }
 
 /* ================= access gate ================= */
