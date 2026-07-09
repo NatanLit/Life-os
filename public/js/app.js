@@ -26,11 +26,40 @@ const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
 
 function setOffline(off){ document.getElementById('sync').hidden = !off; }
 
+/* The API stores one full JSON document — a PUT replaces it wholesale. If this device's
+   copy of S is stale (e.g. a tab left open since before another device's edit), pushing it
+   as-is would silently erase whatever the other device added. So before every push we pull
+   whatever is newer on the server and fold it into S — remote-only items survive, this
+   device's own edits win on conflicts — instead of blindly overwriting the server. */
+function mergeArrays(local, remote){
+  const byId = new Map();
+  for(const item of (remote||[])) byId.set(item.id, item);
+  for(const item of (local||[])) byId.set(item.id, item); // local wins where both have the same id
+  return Array.from(byId.values());
+}
+function mergeDicts(local, remote){ return Object.assign({}, remote||{}, local||{}); } // local wins on shared keys
+async function mergeRemoteIn(){
+  try {
+    const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
+    if(!r.ok) return;
+    const remote = await r.json();
+    S.goals = mergeArrays(S.goals, remote.goals);
+    S.habits = mergeArrays(S.habits, remote.habits);
+    S.workouts = mergeArrays(S.workouts, remote.workouts);
+    S.deadlines = mergeArrays(S.deadlines, remote.deadlines);
+    S.sleep = mergeDicts(S.sleep, remote.sleep);
+    S.reviews = mergeDicts(S.reviews, remote.reviews);
+  } catch(e){ /* offline — push whatever we have; the server's 409 check still guards against clobbering a newer write */ }
+}
+
 let pushTimer = null;
 function pushSoon(){ if(!HAS_API) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 500); }
 async function pushNow(){
   if(!HAS_API) return 'ok';
   try {
+    await mergeRemoteIn();
+    S.updatedAt = Date.now();
+    localStorage.setItem(KEY, JSON.stringify(S));
     const r = await fetch('/api/state', {
       method:'PUT',
       headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
@@ -40,6 +69,8 @@ async function pushNow(){
     if(r.status === 409){
       const j = await r.json();
       if(j.state){ S = Object.assign({}, DEFAULT_STATE, j.state); localStorage.setItem(KEY, JSON.stringify(S)); render(); }
+    } else if(r.ok){
+      render(); // reflect anything mergeRemoteIn() folded in from another device
     }
     setOffline(!r.ok && r.status !== 409);
     return (r.ok || r.status === 409) ? 'ok' : 'offline';
