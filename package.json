@@ -11,6 +11,7 @@
     "node": "22.x"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "redis": "^4.7.0"
   }
 }

@@ -33,13 +33,16 @@ code** protects the public URL, and a free Redis database holds the data.
 
 1. **Push the repo to GitHub** (already done) and import it at
    [vercel.com/new](https://vercel.com/new).
-2. **Add storage:** in the project's **Storage** tab, add **Upstash for Redis**
-   (Marketplace, free tier). Vercel injects the `KV_REST_API_URL` / `KV_REST_API_TOKEN`
-   variables automatically.
+2. **Add storage:** in the project's **Storage** tab, add a **Redis** database
+   (Marketplace, free tier — 30 MB is enormous overkill for this app's data). When
+   connecting it to the project, leave **Custom Prefix** blank so the variable keeps its
+   default name. Vercel injects `REDIS_URL` automatically.
 3. **Set the access code:** project **Settings → Environment Variables**, add
    `ACCESS_CODE` = any private string you'll remember.
 4. **Deploy.** Open the URL, enter your code once per device — phone and laptop then stay
    in sync. Re-syncs on every change and whenever a tab regains focus.
 
-Storage is chosen automatically: with the Redis variables present it uses Redis
-(production); without them it falls back to the local file (your machine).
+Storage is chosen automatically: with `REDIS_URL` present it connects to Redis over a
+standard TCP connection (production); an Upstash-style REST API (`KV_REST_API_URL`/
+`KV_REST_API_TOKEN`) also works if that's what you connected instead; without either it
+falls back to the local file (your machine).
