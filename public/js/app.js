@@ -25,11 +25,12 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 
 /* Bump on every deploy so you can eyeball, on each device, whether it's running the latest
    code (a stale cache shows an older tag). Printed to the console and shown in the footer. */
-const BUILD = 'build 2026-07-09 · sync-v6';
-function markSynced(){
+const BUILD = 'build 2026-07-09 · sync-v7';
+function syncStatus(text){
   const el = document.getElementById('synced-at');
-  if(el) el.textContent = 'synced ' + new Date().toLocaleTimeString();
+  if(el) el.textContent = text;
 }
+function markSynced(){ syncStatus('synced ' + new Date().toLocaleTimeString()); }
 
 let ACCESS = localStorage.getItem('lifeos.code') || '';
 const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
@@ -92,7 +93,7 @@ async function syncNow(){
   try {
     const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
     if(r.status === 401){ showGate(!!ACCESS); result = 'unauthorized'; }
-    else if(!r.ok){ setOffline(true); result = 'offline'; }
+    else if(!r.ok){ setOffline(true); syncStatus('sync error: GET ' + r.status); result = 'offline'; }
     else {
       let base = await r.json();
       if(dirty){
@@ -104,19 +105,22 @@ async function syncNow(){
           S.updatedAt = Date.now();
           localStorage.setItem(KEY, JSON.stringify(S));
           const body = Object.assign({}, S, { baseRev: base.rev || 0 });
-          const pr = await fetch('/api/state', {
-            method:'PUT',
-            headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
-            body: JSON.stringify(body)
-          });
+          let pr;
+          try {
+            pr = await fetch('/api/state', {
+              method:'PUT',
+              headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
+              body: JSON.stringify(body)
+            });
+          } catch(err){ setOffline(true); syncStatus('sync error: PUT failed (' + (err && err.message || 'network') + ')'); result = 'offline'; done = true; break; }
           if(pr.status === 401){ showGate(!!ACCESS); result = 'unauthorized'; done = true; }
           else if(pr.ok){
             const j = await pr.json(); S.rev = j.rev;
             clearDirty(); localStorage.setItem(KEY, JSON.stringify(S));
             render(); setOffline(false); hideGate(); markSynced(); done = true;
           }
-          else if(pr.status === 409){ const j = await pr.json(); base = j.state || base; } // re-merge & retry
-          else { setOffline(true); result = 'offline'; done = true; }
+          else if(pr.status === 409){ const j = await pr.json(); base = j.state || base; if(tries === 5){ setOffline(true); syncStatus('sync error: stuck on 409'); } } // re-merge & retry
+          else { setOffline(true); syncStatus('sync error: PUT ' + pr.status); result = 'offline'; done = true; }
         }
       } else {
         // no unpushed edits → the server is authoritative; take its copy
@@ -127,7 +131,7 @@ async function syncNow(){
         setOffline(false); hideGate(); markSynced();
       }
     }
-  } catch(e){ setOffline(true); result = 'offline'; }
+  } catch(e){ setOffline(true); syncStatus('sync error: ' + (e && e.message || 'network')); result = 'offline'; }
   syncing = false;
   if(syncAgain){ syncAgain = false; return syncNow(); } // a change landed mid-sync — run once more
   return result;
