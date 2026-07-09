@@ -33,19 +33,13 @@
 
 <main class="wrap" id="main"></main>
 
-<footer class="foot wrap">
-  <span id="build" class="foot-build"></span>
-  <button id="sync-now" class="linkish">Sync now</button>
-  <span id="synced-at" class="foot-time"></span>
-</footer>
-
 <!-- ---------- dialogs ---------- -->
 <dialog id="dlg-goal">
   <form id="form-goal">
     <h2 id="dlg-goal-title">New goal</h2>
     <input type="hidden" name="id">
-    <div class="field"><label>Title</label><input name="title" required maxlength="80" placeholder="e.g. Get 7 in MYP Mathematics"></div>
-    <div class="field"><label>Why (one line)</label><input name="why" maxlength="120" placeholder="Why does this matter to you?"></div>
+    <div class="field"><label>Title</label><input name="title" required maxlength="80" autocomplete="off" placeholder="e.g. Get 7 in MYP Mathematics"></div>
+    <div class="field"><label>Why (one line)</label><input name="why" maxlength="120" autocomplete="off" placeholder="Why does this matter to you?"></div>
     <div class="field"><label>Deadline</label>
       <div class="dp" id="dp-goal">
         <input type="text" class="dp-display" placeholder="Select a date" readonly aria-haspopup="dialog">
@@ -63,7 +57,7 @@
   <form id="form-habit">
     <h2 id="dlg-habit-title">New habit</h2>
     <input type="hidden" name="id">
-    <div class="field"><label>Name</label><input name="name" required maxlength="60" placeholder="e.g. Read 20 min"></div>
+    <div class="field"><label>Name</label><input name="name" required maxlength="60" autocomplete="off" placeholder="e.g. Read 20 min"></div>
     <div class="field check"><input type="checkbox" name="workoutLinked" id="hb-wl"><label for="hb-wl">Auto-check when I log a workout</label></div>
     <div class="field check" id="habit-arch-field" hidden><input type="checkbox" name="archived" id="hb-ar"><label for="hb-ar">Archived (hidden from Today)</label></div>
     <div class="dlg-actions">
@@ -77,9 +71,9 @@
   <form id="form-deadline">
     <h2 id="dlg-deadline-title">New school task</h2>
     <input type="hidden" name="id">
-    <div class="field"><label>Task</label><input name="title" required maxlength="100" placeholder="e.g. Criterion B design report"></div>
+    <div class="field"><label>Task</label><input name="title" required maxlength="100" autocomplete="off" placeholder="e.g. Criterion B design report"></div>
     <div class="field"><label>Subject</label>
-      <input name="subject" required maxlength="40" list="subjects" placeholder="e.g. Math">
+      <input name="subject" required maxlength="40" list="subjects" autocomplete="off" placeholder="e.g. Math">
       <datalist id="subjects">
         <option>Math</option><option>English</option><option>Kazakh</option><option>Russian</option>
         <option>Physics</option><option>Chemistry</option><option>Biology</option>
@@ -97,6 +91,29 @@
     </div>
     <div class="field"><label>Linked goal (optional)</label><select name="goalId"><option value="">—</option></select></div>
     <div class="dlg-actions"><button type="button" class="btn-ghost" data-close>Cancel</button><button class="btn">Save</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-countdown">
+  <form id="form-countdown">
+    <h2>Countdown</h2>
+    <div class="field"><label>Label (optional)</label><input name="title" maxlength="40" autocomplete="off" placeholder="e.g. 2025, Exams, Summer"></div>
+    <div class="field"><label>Start</label>
+      <div class="dp" id="dp-cd-start">
+        <input type="text" class="dp-display" placeholder="Select a date" readonly aria-haspopup="dialog">
+        <div class="dp-pop" hidden></div>
+      </div>
+    </div>
+    <div class="field"><label>End</label>
+      <div class="dp" id="dp-cd-end">
+        <input type="text" class="dp-display" placeholder="Select a date" readonly aria-haspopup="dialog">
+        <div class="dp-pop" hidden></div>
+      </div>
+    </div>
+    <div class="dlg-actions">
+      <button type="button" class="linkish" id="countdown-clear" style="margin-right:auto">Remove</button>
+      <button type="button" class="btn-ghost" data-close>Cancel</button><button class="btn">Save</button>
+    </div>
   </form>
 </dialog>
 

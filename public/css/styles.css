@@ -366,6 +366,16 @@ dialog h2{font-size:15px;font-weight:700;margin-bottom:16px}
 .gate-err{color:var(--ink);font-size:12px;font-weight:600;margin:10px 0 0}
 .gate-card .btn{width:100%;padding:11px;margin-top:14px}
 
+/* ================= countdown widget ================= */
+.cd-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px}
+.cd-num{font-size:34px;font-weight:700;line-height:1;letter-spacing:-.02em}
+.cd-cap{font-size:13px;color:var(--g4)}
+.cd-dots{display:flex;flex-wrap:wrap;gap:6px}
+.cd-dots i{width:9px;height:9px;border-radius:50%;background:var(--g2);flex:0 0 auto}
+.cd-dots i.on{background:var(--ink)}
+.cd-dots i.tc{box-shadow:0 0 0 1px var(--paper),0 0 0 2.5px var(--g4)}
+@media (max-width:679px){ .cd-dots{gap:5px} .cd-dots i{width:8px;height:8px} }
+
 /* ================= footer (build + sync status) ================= */
 .foot{
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;

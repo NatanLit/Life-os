@@ -16,7 +16,7 @@ document.getElementById('theme-toggle').addEventListener('click', () =>
 const KEY = 'lifeos.v1';
 /* tombstones: { id -> deletedAt } for top-level items (goals/habits/workouts/deadlines),
    so a delete on one device isn't resurrected when another device's stale copy is merged in */
-const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, tombstones:{}, rev:0, updatedAt:0 };
+const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, countdown:{}, tombstones:{}, rev:0, updatedAt:0 };
 let S = Object.assign({}, DEFAULT_STATE);
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){ /* corrupt local cache — start clean */ }
 
@@ -25,7 +25,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 
 /* Bump on every deploy so you can eyeball, on each device, whether it's running the latest
    code (a stale cache shows an older tag). Printed to the console and shown in the footer. */
-const BUILD = 'build 2026-07-09 · sync-v8';
+const BUILD = 'build 2026-07-09 · sync-v9';
 function syncStatus(text){
   const el = document.getElementById('synced-at');
   if(el) el.textContent = text;
@@ -81,6 +81,9 @@ function mergeInto(remote){
   S.deadlines = mergeArrays(S.deadlines, remote.deadlines, dead);
   S.sleep = mergeDicts(S.sleep, remote.sleep);
   S.reviews = mergeDicts(S.reviews, remote.reviews);
+  // single-config widget: last edit wins by its own timestamp (so clearing it isn't resurrected)
+  const lc = S.countdown || {}, rc = remote.countdown || {};
+  S.countdown = (lc.updatedAt || 0) >= (rc.updatedAt || 0) ? lc : rc;
 }
 
 function markDirty(){ dirty = true; localStorage.setItem(DIRTY_KEY, '1'); }
@@ -305,6 +308,35 @@ function sleepChart(){
     + '<div class="legend">Bars — hours slept · squares — feeling (stronger = better)</div>';
 }
 
+/* ================= countdown widget (filled/empty dots, one per day) ================= */
+const CD_MAX_DOTS = 1200; // safety cap so an absurd range can't lock up rendering
+function countdownWidget(){
+  const cd = S.countdown || {};
+  if(!cd.start || !cd.end){
+    return '<section><div class="micro"><span>Countdown</span><button class="linkish" data-action="cd-edit">+ set up</button></div>'
+      + '<div class="empty">Pick a start and end date to watch the days tick by.</div></section>';
+  }
+  const start = parseKey(cd.start), end = parseKey(cd.end), today = parseKey(todayKey());
+  let total = Math.round((end - start) / 864e5);
+  if(total < 1) total = 1;
+  const capped = Math.min(total, CD_MAX_DOTS);
+  let filled = Math.round((today - start) / 864e5);
+  filled = Math.max(0, Math.min(total, filled));
+  const left = Math.max(0, Math.round((end - today) / 864e5));
+  const label = cd.title ? esc(cd.title) : 'until ' + shortDate(cd.end);
+  let dots = '';
+  const shownFilled = Math.round(filled / total * capped);
+  const todayIdx = shownFilled; // the dot that flips next
+  for(let i=0;i<capped;i++){
+    const on = i < shownFilled;
+    dots += '<i class="'+(on?'on':'')+(i===todayIdx && left>0?' tc':'')+'"></i>';
+  }
+  return '<section><div class="micro"><span>Countdown</span><button class="linkish" data-action="cd-edit">edit</button></div>'
+    + '<div class="cd-head"><span class="cd-num">'+left+'</span><span class="cd-cap">'+(left===1?'day':'days')+' left · '+label+'</span></div>'
+    + '<div class="cd-dots" aria-label="'+filled+' of '+total+' days elapsed">'+dots+'</div>'
+    + '<div class="legend" style="margin-top:8px">'+filled+' of '+total+' days'+(total>capped?' (shown scaled)':'')+'</div></section>';
+}
+
 /* ================= render: today ================= */
 function renderToday(){
   const now = new Date(), t = todayKey();
@@ -312,10 +344,13 @@ function renderToday(){
   if(now.getDay()===0) html += '<div class="sub">It’s Sunday — a good day for your <button class="linkish" data-action="go-review">weekly review</button>.</div>';
   html += '</section>';
 
+  /* countdown widget */
+  html += countdownWidget();
+
   /* habits */
   const habits = activeHabits();
   html += '<section><div class="micro"><span>Habits</span><span style="display:flex;gap:12px">'
-    + (habitEditMode && habits.length<5 ? '<button class="linkish" data-action="habit-add">+ add</button>' : '')
+    + (habits.length<5 ? '<button class="linkish" data-action="habit-add">+ add</button>' : '')
     + '<button class="linkish" data-action="habit-editmode">'+(habitEditMode?'done':'edit')+'</button></span></div>';
   if(!habits.length){
     html += '<div class="empty">No habits yet. <button class="linkish" data-action="habit-add">Add your first habit</button> (max 5 active).</div>';
@@ -613,6 +648,10 @@ function renderReview(){
       + past.map(k=>'<div class="rv-item"><span class="when">'+shortDate(k)+'</span><span>'+esc(S.reviews[k].note)+'</span></div>').join('')
       + '</section>';
   }
+  // quiet debug/sync line, tucked at the very bottom
+  html += '<section class="foot"><span class="foot-build">Life OS · ' + BUILD + '</span>'
+    + '<button class="linkish" data-action="sync-now">Sync now</button>'
+    + '<span class="foot-time" id="synced-at"></span></section>';
   return html;
 }
 
@@ -691,21 +730,34 @@ function datePicker(rootId){
   };
   return api;
 }
-const DP = { goal: datePicker('dp-goal'), due: datePicker('dp-due') };
+const dlgCountdown = document.getElementById('dlg-countdown');
+const DP = { goal: datePicker('dp-goal'), due: datePicker('dp-due'), cdStart: datePicker('dp-cd-start'), cdEnd: datePicker('dp-cd-end') };
+const allDP = () => Object.values(DP).forEach(dp=>dp.close());
 document.addEventListener('click', e=>{
   /* month-nav clicks re-render the popover, detaching the click target — a detached
      node has no .dp ancestor and would falsely read as an outside click */
   if(!(e.target instanceof Element) || !e.target.isConnected) return;
-  if(!e.target.closest('.dp')){ DP.goal.close(); DP.due.close(); }
+  if(!e.target.closest('.dp')){ allDP(); }
 });
-[dlgGoal, dlgDeadline].forEach(d=>{
+[dlgGoal, dlgDeadline, dlgCountdown].forEach(d=>{
   /* Esc closes an open calendar first, the dialog second */
   d.addEventListener('cancel', e=>{
     const openPop = d.querySelector('.dp-pop:not([hidden])');
     if(openPop){ e.preventDefault(); openPop.hidden = true; }
   });
-  d.addEventListener('close', ()=>{ DP.goal.close(); DP.due.close(); });
+  d.addEventListener('close', allDP);
 });
+
+function openCountdownDlg(){
+  const f = document.getElementById('form-countdown');
+  f.reset();
+  const cd = S.countdown || {};
+  f.title.value = cd.title || '';
+  DP.cdStart.value = cd.start || todayKey();
+  DP.cdEnd.value = cd.end || '';
+  document.getElementById('countdown-clear').hidden = !(cd.start && cd.end);
+  dlgCountdown.showModal();
+}
 
 function openGoalDlg(g){
   const f = document.getElementById('form-goal');
@@ -789,6 +841,19 @@ document.getElementById('form-deadline').addEventListener('submit', e=>{
   }
   save(); dlgDeadline.close(); render();
 });
+document.getElementById('form-countdown').addEventListener('submit', e=>{
+  e.preventDefault();
+  const start = DP.cdStart.value, end = DP.cdEnd.value;
+  if(!start){ DP.cdStart.flagEmpty(); return; }
+  if(!end){ DP.cdEnd.flagEmpty(); return; }
+  if(end < start){ DP.cdEnd.flagEmpty(); return; } // end must be after start
+  S.countdown = { title: e.target.title.value.trim(), start, end, updatedAt: Date.now() };
+  save(); dlgCountdown.close(); render();
+});
+document.getElementById('countdown-clear').addEventListener('click', ()=>{
+  S.countdown = { updatedAt: Date.now() }; // timestamped empty so the clear survives a merge
+  save(); dlgCountdown.close(); render();
+});
 
 /* ================= event delegation ================= */
 document.getElementById('nav').addEventListener('click', e=>{
@@ -858,6 +923,8 @@ document.getElementById('main').addEventListener('click', e=>{
     S.reviews[weekKey()] = {note, savedAt: Date.now()};
     save(); render();
   }
+  else if(a==='cd-edit'){ openCountdownDlg(); }
+  else if(a==='sync-now'){ syncStatus('syncing…'); pullRemote(); }
 });
 
 /* checkboxes: habits, goal tasks, school deadlines */
@@ -931,14 +998,8 @@ document.addEventListener('scroll', ()=>{ tip.style.opacity = 0; }, true);
 const headerEl = document.querySelector('header');
 addEventListener('scroll', ()=> headerEl.classList.toggle('scrolled', scrollY > 4), {passive:true});
 
-/* build marker + manual sync (so you can tell, per device, which code is loaded) */
+/* build marker in the console (the on-screen version lives quietly at the bottom of Review) */
 console.log('Life OS ' + BUILD);
-document.getElementById('build').textContent = 'Life OS · ' + BUILD;
-document.getElementById('sync-now').addEventListener('click', ()=>{
-  const el = document.getElementById('synced-at');
-  if(el) el.textContent = 'syncing…';
-  pullRemote();
-});
 
 render();
 pullRemote();
