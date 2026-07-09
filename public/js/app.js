@@ -90,6 +90,8 @@ document.getElementById('gate-form').addEventListener('submit', async e=>{
 let view = 'today';
 let habitEditMode = false;
 const openGoals = new Set();
+let calView = { y: new Date().getFullYear(), m: new Date().getMonth() };
+let calSelected = '';
 
 /* ================= dates ================= */
 const pad = n => String(n).padStart(2,'0');
@@ -300,6 +302,68 @@ function renderToday(){
   return html;
 }
 
+/* ================= render: calendar ================= */
+function calItemsForDay(iso){
+  const items = [];
+  for(const d of S.deadlines) if(!d.done && d.due === iso) items.push({type:'task', ref:d});
+  for(const g of S.goals) if(g.status !== 'done' && g.deadline === iso) items.push({type:'goal', ref:g});
+  items.sort((a,b)=>{
+    const pa = a.type==='task' ? PRI_W[a.ref.priority] : 3;
+    const pb = b.type==='task' ? PRI_W[b.ref.priority] : 3;
+    return pa - pb;
+  });
+  return items;
+}
+function renderCalendar(){
+  const { y: vy, m: vm } = calView;
+  const t = todayKey();
+  const selDay = calSelected || t;
+  const start = monday(new Date(vy, vm, 1));
+  let cells = '';
+  for(let i=0;i<42;i++){
+    const d = addDays(start, i);
+    const iso = dkey(d);
+    const items = calItemsForDay(iso);
+    const shown = items.slice(0,2);
+    let inner = '<span class="mcal-num">'+d.getDate()+'</span>';
+    for(const it of shown){
+      const hi = it.type==='task' && it.ref.priority==='high';
+      inner += '<span class="mcal-chip'+(it.type==='goal'?' goal':'')+(hi?' hi':'')+'">'+esc(it.ref.title)+'</span>';
+    }
+    if(items.length > shown.length) inner += '<span class="mcal-more">+'+(items.length-shown.length)+' more</span>';
+    cells += '<button type="button" class="mcal-day'+(d.getMonth()!==vm?' out':'')+(iso===t?' today':'')+(iso===selDay?' sel':'')
+      + '" data-action="cal-day" data-day="'+iso+'" aria-label="'+shortDate(iso)+(items.length?', '+items.length+' item'+(items.length===1?'':'s'):'')+'">'+inner+'</button>';
+  }
+  let html = '<section><div class="mcal-head">'
+    + '<button type="button" class="dp-nav" data-action="cal-prev" aria-label="Previous month">‹</button>'
+    + '<h1 class="day" style="margin:0">'+MONTHS_FULL[vm]+' '+vy+'</h1>'
+    + '<button type="button" class="dp-nav" data-action="cal-next" aria-label="Next month">›</button>'
+    + '<button class="linkish" data-action="cal-today" style="margin-left:auto">today</button></div>';
+  html += '<div class="mcal-wd">'+['Mo','Tu','We','Th','Fr','Sa','Su'].map(w=>'<span>'+w+'</span>').join('')+'</div>';
+  html += '<div class="mcal-grid">'+cells+'</div></section>';
+
+  const items = calItemsForDay(selDay);
+  html += '<section><div class="micro"><span>'+(selDay===t?'Today · '+shortDate(selDay):shortDate(selDay))
+    + '</span><button class="linkish" data-action="cal-add-here">+ add task due here</button></div>';
+  if(items.length){
+    html += '<div class="row-list">' + items.map(it => it.type==='task'
+      ? '<div class="dl" data-action="cal-open-task" data-id="'+it.ref.id+'">'
+        + '<span class="mcal-dot square'+(it.ref.priority==='high'?' hi':'')+'"></span>'
+        + '<div class="dmeta"><div class="dtitle">'+esc(it.ref.title)+'</div>'
+        + '<div class="dtags"><span class="chip">'+esc(it.ref.subject)+'</span>'
+        + '<span class="chip '+(it.ref.priority==='high'?'solid':it.ref.priority==='low'?'faint':'')+'">'+it.ref.priority+'</span></div></div></div>'
+      : '<div class="dl" data-action="cal-open-goal" data-id="'+it.ref.id+'">'
+        + '<span class="mcal-dot circle"></span>'
+        + '<div class="dmeta"><div class="dtitle">'+esc(it.ref.title)+'</div>'
+        + '<div class="dtags"><span class="chip faint">goal deadline</span></div></div></div>'
+    ).join('') + '</div>';
+  } else {
+    html += '<div class="empty">Nothing due on this day.</div>';
+  }
+  html += '</section>';
+  return html;
+}
+
 /* ================= render: goals ================= */
 function goalCard(g){
   const pct = goalPct(g);
@@ -474,6 +538,7 @@ function render(){
   document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active', b.dataset.nav===view));
   const main = document.getElementById('main');
   main.innerHTML = view==='today' ? renderToday()
+    : view==='calendar' ? renderCalendar()
     : view==='goals' ? renderGoals()
     : view==='school' ? renderSchool()
     : view==='workouts' ? renderWorkouts()
@@ -579,7 +644,7 @@ function openHabitDlg(h){
   if(h){ f.name.value=h.name; f.workoutLinked.checked=!!h.workoutLinked; f.archived.checked=!!h.archived; }
   dlgHabit.showModal();
 }
-function openDeadlineDlg(d){
+function openDeadlineDlg(d, presetDue){
   const f = document.getElementById('form-deadline');
   f.reset();
   f.id.value = d ? d.id : '';
@@ -587,7 +652,7 @@ function openDeadlineDlg(d){
   const sel = f.goalId;
   sel.innerHTML = '<option value="">—</option>' + S.goals.filter(g=>g.status!=='done')
     .map(g=>'<option value="'+g.id+'">'+esc(g.title)+'</option>').join('');
-  DP.due.value = d ? d.due : '';
+  DP.due.value = d ? d.due : (presetDue || '');
   if(d){ f.title.value=d.title; f.subject.value=d.subject; f.priority.value=d.priority; f.goalId.value=d.goalId||''; }
   dlgDeadline.showModal();
 }
@@ -655,6 +720,18 @@ document.getElementById('main').addEventListener('click', e=>{
   if(a==='go-school'){ view='school'; render(); }
   else if(a==='go-goals'){ view='goals'; render(); }
   else if(a==='go-review'){ view='review'; render(); }
+  else if(a==='cal-prev'){ calView.m--; if(calView.m<0){ calView.m=11; calView.y--; } render(); }
+  else if(a==='cal-next'){ calView.m++; if(calView.m>11){ calView.m=0; calView.y++; } render(); }
+  else if(a==='cal-today'){ const now=new Date(); calView={y:now.getFullYear(), m:now.getMonth()}; calSelected=''; render(); }
+  else if(a==='cal-day'){
+    calSelected = el.dataset.day;
+    const d = parseKey(calSelected);
+    calView = { y: d.getFullYear(), m: d.getMonth() };
+    render();
+  }
+  else if(a==='cal-add-here'){ openDeadlineDlg(null, calSelected || todayKey()); }
+  else if(a==='cal-open-task'){ openDeadlineDlg(S.deadlines.find(x=>x.id===el.dataset.id)); }
+  else if(a==='cal-open-goal'){ openGoalDlg(S.goals.find(x=>x.id===el.dataset.id)); }
   else if(a==='habit-editmode'){ habitEditMode=!habitEditMode; render(); }
   else if(a==='habit-add'){ openHabitDlg(null); }
   else if(a==='habit-edit'){ openHabitDlg(S.habits.find(h=>h.id===el.dataset.id)); }

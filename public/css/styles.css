@@ -294,6 +294,42 @@ textarea:focus{border-color:var(--ink)}
 .dp-day.sel{background:var(--ink);color:var(--paper)}
 .dp-day.sel:hover{background:var(--ink)}
 
+/* ================= month calendar (adapted from the shadcn/ui Calendar pattern, monochrome) ================= */
+.mcal-head{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.mcal-wd{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+.mcal-wd span{font-size:10.5px;font-weight:600;color:var(--g4);text-transform:uppercase;letter-spacing:.04em;text-align:center}
+.mcal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.mcal-day{
+  min-height:68px;border:1px solid var(--line);border-radius:8px;
+  padding:6px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  text-align:left;overflow:hidden;transition:border-color .12s,background .12s;
+}
+.mcal-day:hover{border-color:var(--g4)}
+.mcal-day.out{color:var(--g3)}
+.mcal-day.out .mcal-num{color:var(--g3)}
+.mcal-day.today{border-color:var(--ink);border-width:1.5px}
+.mcal-day.sel{background:var(--g1);border-color:var(--ink)}
+.mcal-num{font-size:12.5px;font-weight:600}
+.mcal-chip{
+  font-size:9.5px;font-weight:500;color:var(--g5);background:var(--g1);
+  border-radius:3px;padding:1px 4px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mcal-chip.hi{background:var(--ink);color:var(--paper);font-weight:600}
+.mcal-chip.goal{background:none;border:1px solid var(--g3);color:var(--g5)}
+.mcal-more{font-size:9px;color:var(--g4)}
+.mcal-dot{width:9px;height:9px;flex-shrink:0;background:var(--ink)}
+.mcal-dot.square{border-radius:2px}
+.mcal-dot.square.hi{width:10px;height:10px}
+.mcal-dot.circle{border-radius:50%;background:none;border:1.5px solid var(--ink)}
+.row-list .dl[data-action]{cursor:pointer}
+.row-list .dl[data-action]:hover{background:var(--g1)}
+@media (max-width:679px){
+  .mcal-day{min-height:54px;padding:4px;gap:1px}
+  .mcal-chip{font-size:8px;padding:0 3px}
+  .mcal-num{font-size:11px}
+  .mcal-more{font-size:8px}
+}
+
 /* ================= dialogs / forms ================= */
 dialog{
   border:1px solid var(--g3);border-radius:10px;padding:24px;
