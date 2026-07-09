@@ -14,7 +14,9 @@ document.getElementById('theme-toggle').addEventListener('click', () =>
 
 /* ================= state + server sync ================= */
 const KEY = 'lifeos.v1';
-const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, updatedAt:0 };
+/* tombstones: { id -> deletedAt } for top-level items (goals/habits/workouts/deadlines),
+   so a delete on one device isn't resurrected when another device's stale copy is merged in */
+const DEFAULT_STATE = { goals:[], habits:[], workouts:[], deadlines:[], sleep:{}, reviews:{}, tombstones:{}, updatedAt:0 };
 let S = Object.assign({}, DEFAULT_STATE);
 try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){ /* corrupt local cache — start clean */ }
 
@@ -28,25 +30,44 @@ function setOffline(off){ document.getElementById('sync').hidden = !off; }
 
 /* The API stores one full JSON document — a PUT replaces it wholesale. If this device's
    copy of S is stale (e.g. a tab left open since before another device's edit), pushing it
-   as-is would silently erase whatever the other device added. So before every push we pull
-   whatever is newer on the server and fold it into S — remote-only items survive, this
-   device's own edits win on conflicts — instead of blindly overwriting the server. */
-function mergeArrays(local, remote){
+   as-is would silently erase whatever the other device added. So before every push we fold
+   in whatever is on the server: remote-only items survive, this device's own edits win on
+   conflicts, and tombstones keep deletions from being resurrected by the union. */
+const TOMB_TTL = 60 * 864e5; // forget deletions after 60 days so the tombstone map can't grow forever
+function tombstone(id){ S.tombstones = S.tombstones || {}; S.tombstones[id] = Date.now(); }
+function mergeTombstones(local, remote){
+  const out = Object.assign({}, remote || {});
+  for(const id in (local || {})) out[id] = Math.max(out[id] || 0, local[id]);
+  const cutoff = Date.now() - TOMB_TTL;
+  for(const id in out) if(out[id] < cutoff) delete out[id];
+  return out;
+}
+function mergeArrays(local, remote, dead){
   const byId = new Map();
   for(const item of (remote||[])) byId.set(item.id, item);
   for(const item of (local||[])) byId.set(item.id, item); // local wins where both have the same id
-  return Array.from(byId.values());
+  const out = [];
+  for(const item of byId.values()) if(!dead || !dead[item.id]) out.push(item); // drop anything a device deleted
+  return out;
 }
 function mergeDicts(local, remote){ return Object.assign({}, remote||{}, local||{}); } // local wins on shared keys
+function applyDead(dead){
+  S.goals = (S.goals||[]).filter(x=>!dead[x.id]);
+  S.habits = (S.habits||[]).filter(x=>!dead[x.id]);
+  S.workouts = (S.workouts||[]).filter(x=>!dead[x.id]);
+  S.deadlines = (S.deadlines||[]).filter(x=>!dead[x.id]);
+}
 async function mergeRemoteIn(){
   try {
     const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
     if(!r.ok) return;
     const remote = await r.json();
-    S.goals = mergeArrays(S.goals, remote.goals);
-    S.habits = mergeArrays(S.habits, remote.habits);
-    S.workouts = mergeArrays(S.workouts, remote.workouts);
-    S.deadlines = mergeArrays(S.deadlines, remote.deadlines);
+    const dead = mergeTombstones(S.tombstones, remote.tombstones);
+    S.tombstones = dead;
+    S.goals = mergeArrays(S.goals, remote.goals, dead);
+    S.habits = mergeArrays(S.habits, remote.habits, dead);
+    S.workouts = mergeArrays(S.workouts, remote.workouts, dead);
+    S.deadlines = mergeArrays(S.deadlines, remote.deadlines, dead);
     S.sleep = mergeDicts(S.sleep, remote.sleep);
     S.reviews = mergeDicts(S.reviews, remote.reviews);
   } catch(e){ /* offline — push whatever we have; the server's 409 check still guards against clobbering a newer write */ }
@@ -84,7 +105,10 @@ async function pullRemote(){
     if(!r.ok) throw new Error('bad status');
     const remote = await r.json();
     if((remote.updatedAt || 0) > (S.updatedAt || 0)){
+      const dead = mergeTombstones(S.tombstones, remote.tombstones); // keep our not-yet-pushed deletions
       S = Object.assign({}, DEFAULT_STATE, remote);
+      S.tombstones = dead;
+      applyDead(dead);
       localStorage.setItem(KEY, JSON.stringify(S));
       render();
     } else if((S.updatedAt || 0) > (remote.updatedAt || 0)){
@@ -720,7 +744,7 @@ document.getElementById('form-habit').addEventListener('submit', e=>{
 document.getElementById('habit-delete').addEventListener('click', ()=>{
   const id = document.getElementById('form-habit').id.value;
   if(id && confirm('Delete this habit and its history?')){
-    S.habits = S.habits.filter(h=>h.id!==id);
+    S.habits = S.habits.filter(h=>h.id!==id); tombstone(id);
     save(); dlgHabit.close(); render();
   }
 });
@@ -777,7 +801,7 @@ document.getElementById('main').addEventListener('click', e=>{
   else if(a==='goal-reopen'){ const g=S.goals.find(x=>x.id===el.dataset.id); if(g){g.status='active'; save(); render();} }
   else if(a==='goal-del'){
     if(confirm('Delete this goal, its milestones and tasks?')){
-      S.goals = S.goals.filter(g=>g.id!==el.dataset.id); save(); render();
+      S.goals = S.goals.filter(g=>g.id!==el.dataset.id); tombstone(el.dataset.id); save(); render();
     }
   }
   else if(a==='ms-del'){
@@ -792,8 +816,8 @@ document.getElementById('main').addEventListener('click', e=>{
     if(m){ m.tasks = m.tasks.filter(t=>t.id!==el.dataset.id); save(); render(); }
   }
   else if(a==='dl-add'){ openDeadlineDlg(null); }
-  else if(a==='dl-del'){ S.deadlines = S.deadlines.filter(d=>d.id!==el.dataset.id); save(); render(); }
-  else if(a==='wo-del'){ S.workouts = S.workouts.filter(w=>w.id!==el.dataset.id); save(); render(); }
+  else if(a==='dl-del'){ S.deadlines = S.deadlines.filter(d=>d.id!==el.dataset.id); tombstone(el.dataset.id); save(); render(); }
+  else if(a==='wo-del'){ S.workouts = S.workouts.filter(w=>w.id!==el.dataset.id); tombstone(el.dataset.id); save(); render(); }
   else if(a==='sleep-hours' || a==='sleep-feel'){
     const t = todayKey();
     S.sleep[t] = S.sleep[t] || {};
