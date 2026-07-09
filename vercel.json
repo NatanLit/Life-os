@@ -2,5 +2,23 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/index.html",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/js/app.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    },
+    {
+      "source": "/css/styles.css",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, must-revalidate" }]
+    }
   ]
 }

@@ -907,3 +907,12 @@ render();
 pullRemote();
 /* re-sync when the tab comes back to the foreground */
 document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) pullRemote(); });
+/* and poll while visible so several devices converge live without a manual reload —
+   but never yank the UI out from under an open dialog or something you're typing into */
+setInterval(()=>{
+  if(document.hidden) return;
+  if(document.querySelector('dialog[open]')) return;
+  const ae = document.activeElement;
+  if(ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA')) return;
+  pullRemote();
+}, 10000);
