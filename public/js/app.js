@@ -23,6 +23,14 @@ try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){
 const HAS_API = location.protocol.startsWith('http');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
+/* Bump on every deploy so you can eyeball, on each device, whether it's running the latest
+   code (a stale cache shows an older tag). Printed to the console and shown in the footer. */
+const BUILD = 'build 2026-07-09 · sync-v4';
+function markSynced(){
+  const el = document.getElementById('synced-at');
+  if(el) el.textContent = 'synced ' + new Date().toLocaleTimeString();
+}
+
 let ACCESS = localStorage.getItem('lifeos.code') || '';
 const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
 
@@ -94,6 +102,7 @@ async function pushNow(){
       render(); // reflect anything mergeRemoteIn() folded in from another device
     }
     setOffline(!r.ok && r.status !== 409);
+    if(r.ok || r.status === 409) markSynced();
     return (r.ok || r.status === 409) ? 'ok' : 'offline';
   } catch(e){ setOffline(true); return 'offline'; }
 }
@@ -116,6 +125,7 @@ async function pullRemote(){
     }
     setOffline(false);
     hideGate();
+    markSynced();
     return 'ok';
   } catch(e){ setOffline(true); return 'offline'; }
 }
@@ -902,6 +912,15 @@ document.addEventListener('scroll', ()=>{ tip.style.opacity = 0; }, true);
 /* hairline under the header only once content scrolls beneath it */
 const headerEl = document.querySelector('header');
 addEventListener('scroll', ()=> headerEl.classList.toggle('scrolled', scrollY > 4), {passive:true});
+
+/* build marker + manual sync (so you can tell, per device, which code is loaded) */
+console.log('Life OS ' + BUILD);
+document.getElementById('build').textContent = 'Life OS · ' + BUILD;
+document.getElementById('sync-now').addEventListener('click', ()=>{
+  const el = document.getElementById('synced-at');
+  if(el) el.textContent = 'syncing…';
+  pullRemote();
+});
 
 render();
 pullRemote();
