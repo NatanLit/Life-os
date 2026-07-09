@@ -95,6 +95,17 @@
 
 <div id="tooltip" role="tooltip"></div>
 
+<!-- ---------- access gate ---------- -->
+<div id="gate" class="gate" hidden>
+  <form id="gate-form" class="gate-card">
+    <div class="wordmark" style="margin-bottom:10px">LIFE OS</div>
+    <p class="gate-sub">Enter your access code to sync this device.</p>
+    <input type="password" id="gate-input" placeholder="Access code" autocomplete="current-password" aria-label="Access code">
+    <p class="gate-err" id="gate-err" hidden>Wrong code — try again.</p>
+    <button class="btn" type="submit">Unlock</button>
+  </form>
+</div>
+
 <script src="js/app.js"></script>
 </body>
 </html>

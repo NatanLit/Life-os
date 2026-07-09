@@ -1,21 +1,45 @@
 # Life OS
 
-A personal system for goals, habits, workouts, school deadlines and sleep — built for a high school student (IB MYP). Strict monochrome design with two themes: black-on-white and white-on-black (toggle in the header, ◐).
+A personal system for goals, habits, workouts, school deadlines and sleep — built for a
+high school student (IB MYP). Strict monochrome design with two themes: black-on-white and
+white-on-black (toggle ◐ in the header).
+
+Works on phone and computer at the same time: the frontend keeps a local copy in
+`localStorage` and syncs it with the backend, so any device with the access code sees the
+same, always-current data.
 
 ## Structure
 
-- `server.js` — Express backend: REST API (`GET/PUT /api/state`, `GET /api/health`) with atomic JSON-file persistence in `data/db.json`, serves the frontend.
+- `api/state.js` — Vercel serverless function: `GET`/`PUT /api/state`, behind the access gate.
+- `server.js` — local Express server (same API + serves the frontend) for `npm start`.
+- `lib/` — shared logic: `store.js` (Redis **or** local file), `api.js` (validation +
+  conflict handling), `auth.js` (access-code check).
 - `public/` — frontend: vanilla JS + CSS, no build step.
 
-## Run
+## Run locally
 
 ```sh
 npm install
 npm start          # http://localhost:3000
 ```
 
-`PORT` and `DATA_DIR` environment variables are respected.
+Locally there is no access code and data is stored in `data/db.json`. `PORT`, `DATA_DIR`
+and `ACCESS_CODE` environment variables are respected.
 
-## Offline
+## Deploy to Vercel (multi-device sync)
 
-The frontend keeps a full copy of state in `localStorage` and syncs with the server (last-write-wins with conflict detection). Opening `public/index.html` directly from disk also works — it then runs on `localStorage` alone.
+You do **not** need a login/account system — you are the only user. A single **access
+code** protects the public URL, and a free Redis database holds the data.
+
+1. **Push the repo to GitHub** (already done) and import it at
+   [vercel.com/new](https://vercel.com/new).
+2. **Add storage:** in the project's **Storage** tab, add **Upstash for Redis**
+   (Marketplace, free tier). Vercel injects the `KV_REST_API_URL` / `KV_REST_API_TOKEN`
+   variables automatically.
+3. **Set the access code:** project **Settings → Environment Variables**, add
+   `ACCESS_CODE` = any private string you'll remember.
+4. **Deploy.** Open the URL, enter your code once per device — phone and laptop then stay
+   in sync. Re-syncs on every change and whenever a tab regains focus.
+
+Storage is chosen automatically: with the Redis variables present it uses Redis
+(production); without them it falls back to the local file (your machine).

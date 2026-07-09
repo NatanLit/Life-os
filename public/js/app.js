@@ -21,25 +21,35 @@ try { Object.assign(S, JSON.parse(localStorage.getItem(KEY)) || {}); } catch(e){
 const HAS_API = location.protocol.startsWith('http');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
+let ACCESS = localStorage.getItem('lifeos.code') || '';
+const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
+
 function setOffline(off){ document.getElementById('sync').hidden = !off; }
 
 let pushTimer = null;
 function pushSoon(){ if(!HAS_API) return; clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 500); }
 async function pushNow(){
-  if(!HAS_API) return;
+  if(!HAS_API) return 'ok';
   try {
-    const r = await fetch('/api/state', { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(S) });
+    const r = await fetch('/api/state', {
+      method:'PUT',
+      headers: Object.assign({'Content-Type':'application/json'}, authHeaders()),
+      body: JSON.stringify(S)
+    });
+    if(r.status === 401){ showGate(!!ACCESS); return 'unauthorized'; }
     if(r.status === 409){
       const j = await r.json();
       if(j.state){ S = Object.assign({}, DEFAULT_STATE, j.state); localStorage.setItem(KEY, JSON.stringify(S)); render(); }
     }
     setOffline(!r.ok && r.status !== 409);
-  } catch(e){ setOffline(true); }
+    return (r.ok || r.status === 409) ? 'ok' : 'offline';
+  } catch(e){ setOffline(true); return 'offline'; }
 }
 async function pullRemote(){
-  if(!HAS_API) return;
+  if(!HAS_API) return 'ok';
   try {
-    const r = await fetch('/api/state', { cache:'no-store' });
+    const r = await fetch('/api/state', { cache:'no-store', headers: authHeaders() });
+    if(r.status === 401){ showGate(!!ACCESS); return 'unauthorized'; }
     if(!r.ok) throw new Error('bad status');
     const remote = await r.json();
     if((remote.updatedAt || 0) > (S.updatedAt || 0)){
@@ -50,13 +60,32 @@ async function pullRemote(){
       pushNow();
     }
     setOffline(false);
-  } catch(e){ setOffline(true); }
+    hideGate();
+    return 'ok';
+  } catch(e){ setOffline(true); return 'offline'; }
 }
 function save(){
   S.updatedAt = Date.now();
   localStorage.setItem(KEY, JSON.stringify(S));
   pushSoon();
 }
+
+/* ================= access gate ================= */
+function showGate(withError){
+  const g = document.getElementById('gate');
+  document.getElementById('gate-err').hidden = !withError;
+  g.hidden = false;
+  setTimeout(()=>document.getElementById('gate-input').focus(), 40);
+}
+function hideGate(){ document.getElementById('gate').hidden = true; }
+document.getElementById('gate-form').addEventListener('submit', async e=>{
+  e.preventDefault();
+  ACCESS = document.getElementById('gate-input').value.trim();
+  localStorage.setItem('lifeos.code', ACCESS);
+  const res = await pullRemote();
+  if(res === 'unauthorized'){ showGate(true); }
+  else { hideGate(); document.getElementById('gate-input').value = ''; }
+});
 
 let view = 'today';
 let habitEditMode = false;

@@ -314,6 +314,22 @@ dialog h2{font-size:15px;font-weight:700;margin-bottom:16px}
 .field.check label{margin:0;text-transform:none;letter-spacing:0;font-size:13.5px;font-weight:500;color:var(--ink)}
 .dlg-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:20px}
 
+/* ================= access gate ================= */
+.gate{
+  position:fixed;inset:0;z-index:100;background:var(--paper);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.gate[hidden]{display:none} /* a class would otherwise beat the [hidden] UA rule and keep the overlay blocking clicks */
+.gate-card{width:min(92vw,300px);text-align:center}
+.gate-sub{color:var(--g4);font-size:13px;margin-bottom:18px}
+.gate-card input{
+  width:100%;border:1px solid var(--g3);border-radius:6px;padding:11px 12px;
+  font-size:14px;outline:none;background:var(--paper);text-align:center;letter-spacing:.08em;
+}
+.gate-card input:focus{border-color:var(--ink)}
+.gate-err{color:var(--ink);font-size:12px;font-weight:600;margin:10px 0 0}
+.gate-card .btn{width:100%;padding:11px;margin-top:14px}
+
 /* ================= tooltip ================= */
 #tooltip{
   position:fixed;z-index:50;background:var(--ink);color:var(--paper);
