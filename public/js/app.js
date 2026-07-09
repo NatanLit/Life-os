@@ -25,7 +25,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 
 /* Bump on every deploy so you can eyeball, on each device, whether it's running the latest
    code (a stale cache shows an older tag). Printed to the console and shown in the footer. */
-const BUILD = 'build 2026-07-09 · sync-v7';
+const BUILD = 'build 2026-07-09 · sync-v8';
 function syncStatus(text){
   const el = document.getElementById('synced-at');
   if(el) el.textContent = text;
@@ -33,7 +33,11 @@ function syncStatus(text){
 function markSynced(){ syncStatus('synced ' + new Date().toLocaleTimeString()); }
 
 let ACCESS = localStorage.getItem('lifeos.code') || '';
-const authHeaders = () => ACCESS ? { 'Authorization': 'Bearer ' + ACCESS } : {};
+/* HTTP headers must be Latin-1. A code with a non-Latin-1 char (e.g. a Cyrillic letter that
+   looks like a Latin one) makes fetch throw before sending anything — so guard it: an unsafe
+   code is treated as "no code" rather than crashing every request. */
+function latin1Safe(s){ for(let i=0;i<s.length;i++) if(s.charCodeAt(i) > 255) return false; return true; }
+const authHeaders = () => (ACCESS && latin1Safe(ACCESS)) ? { 'Authorization': 'Bearer ' + ACCESS } : {};
 
 function setOffline(off){ document.getElementById('sync').hidden = !off; }
 
@@ -147,16 +151,19 @@ function save(){
 }
 
 /* ================= access gate ================= */
-function showGate(withError){
-  const g = document.getElementById('gate');
-  document.getElementById('gate-err').hidden = !withError;
-  g.hidden = false;
+function showGate(withError, msg){
+  const err = document.getElementById('gate-err');
+  err.textContent = msg || 'Wrong code — try again.';
+  err.hidden = !withError;
+  document.getElementById('gate').hidden = false;
   setTimeout(()=>document.getElementById('gate-input').focus(), 40);
 }
 function hideGate(){ document.getElementById('gate').hidden = true; }
 document.getElementById('gate-form').addEventListener('submit', async e=>{
   e.preventDefault();
-  ACCESS = document.getElementById('gate-input').value.trim();
+  const code = document.getElementById('gate-input').value.trim();
+  if(!latin1Safe(code)){ showGate(true, 'Use Latin letters and digits only (a Cyrillic letter may have slipped in).'); return; }
+  ACCESS = code;
   localStorage.setItem('lifeos.code', ACCESS);
   const res = await pullRemote();
   if(res === 'unauthorized'){ showGate(true); }
