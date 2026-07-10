@@ -46,3 +46,12 @@ Storage is chosen automatically: with `REDIS_URL` present it connects to Redis o
 standard TCP connection (production); an Upstash-style REST API (`KV_REST_API_URL`/
 `KV_REST_API_TOKEN`) also works if that's what you connected instead; without either it
 falls back to the local file (your machine).
+
+## Let an AI agent read & write it for you
+
+`mcp/` is an MCP server that gives an agent (Claude Desktop, Claude Code, …) the same
+powers you have: read everything and give feedback, and create / edit / complete / delete
+habits, goals, milestones (sub-goals), tasks, deadlines, workouts, sleep and reviews — all
+synced to every device. It authenticates with your access code and is conflict-safe. See
+[`mcp/README.md`](mcp/README.md) for setup. Then you just say *"add 3 habits to sleep
+better"* or *"what's stuck this week?"* and it does it in your live app.

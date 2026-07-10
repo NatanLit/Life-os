@@ -1,0 +1,15 @@
+{
+  "name": "life-os-mcp",
+  "version": "1.0.0",
+  "description": "MCP server exposing full read/write access to a Life OS deployment as agent tools",
+  "type": "module",
+  "bin": { "life-os-mcp": "server.js" },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  }
+}
