@@ -55,3 +55,7 @@ habits, goals, milestones (sub-goals), tasks, deadlines, workouts, sleep and rev
 synced to every device. It authenticates with your access code and is conflict-safe. See
 [`mcp/README.md`](mcp/README.md) for setup. Then you just say *"add 3 habits to sleep
 better"* or *"what's stuck this week?"* and it does it in your live app.
+
+To let **any** AI (not just Claude) drive it over plain HTTP, hand it
+[`INTEGRATION.md`](INTEGRATION.md) — a complete REST API + data-model reference plus the
+read-modify-write recipe — together with the base URL and access code.
